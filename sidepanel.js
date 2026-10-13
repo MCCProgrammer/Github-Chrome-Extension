@@ -1,8 +1,8 @@
-// Estado guardado em chrome.storage.local, por conta (ver github-session.js) e partilhado
-// com a página do GitHub (content.js):
-//   account:            login com sessão iniciada no github.com ('' = sem sessão)
+// State in chrome.storage.local, per account (see github-session.js) and shared
+// with the GitHub page (content.js):
+//   account:            login signed in on github.com ('' = signed out)
 //   folders@<login>:    [{ id, name, collapsed, repos: ["owner/name", ...], parentId, color }]
-//   repos@<login>:      cache dos repositórios lidos das páginas do GitHub
+//   repos@<login>:      cache of repositories read from GitHub's pages
 //   unsortedCollapsed@<login>: boolean
 const UNSORTED = '__unsorted__';
 const FOLDER_COLORS = ['#4493f8', '#3fb950', '#a371f7', '#f0883e', '#db61a2', '#d29922', '#39c5cf', '#f85149'];
@@ -15,7 +15,7 @@ const LANGUAGE_COLORS = {
 };
 
 const state = {
-  login: null, // null = ainda a detetar
+  login: null, // null = still detecting
   folders: [],
   repos: [],
   unsortedCollapsed: false,
@@ -25,7 +25,7 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 
-// ---------- Ícones (os mesmos traços do painel na página) ----------
+// ---------- Icons (same strokes as the in-page panel) ----------
 
 const ICONS = {
   chevron: '<polyline points="9 18 15 12 9 6"/>',
@@ -70,7 +70,7 @@ function iconButton(name, title, onClick, extraClass = '') {
   return btn;
 }
 
-// ---------- Armazenamento ----------
+// ---------- Storage ----------
 
 async function load() {
   const { account } = await chrome.storage.local.get('account');
@@ -95,7 +95,7 @@ function findRepo(fullName) {
   return state.repos.find((r) => r.fullName.toLowerCase() === n);
 }
 
-// Junta sem apagar campos já conhecidos (a página do perfil pode saber mais do que a API e vice-versa).
+// Merge without dropping known fields (the profile page may know more than the API and vice versa).
 function mergeRepos(found) {
   const byName = new Map(state.repos.map((r) => [r.fullName.toLowerCase(), r]));
   for (const r of found) {
@@ -107,18 +107,18 @@ function mergeRepos(found) {
   return Session.save(state.login, { repos: state.repos });
 }
 
-// ---------- Conta e repositórios (lidos do github.com com a sessão) ----------
+// ---------- Account and repositories (read from github.com with the session) ----------
 
-// Vê no github.com qual é a conta com sessão iniciada; se mudou, carrega as pastas dessa conta.
+// Checks github.com for the signed-in account; if it changed, loads that account's folders.
 async function detectAccount() {
   let login;
   try {
     login = await Session.detectLogin();
   } catch {
-    if (state.login === null) setStatus('Não consegui contactar o GitHub.', true);
+    if (state.login === null) setStatus("Couldn't reach GitHub.", true);
     return;
   }
-  await Session.setAccount(login); // o listener do storage trata da mudança
+  await Session.setAccount(login); // the storage listener handles the switch
   if (login === state.login && login && state.repos.length === 0) fetchRepos();
 }
 
@@ -127,26 +127,26 @@ async function fetchRepos() {
   if (!state.login || fetching) return;
   fetching = true;
   const login = state.login;
-  setStatus('A carregar repositórios…');
+  setStatus('Loading repositories…');
   $('refreshBtn').classList.add('spin');
   try {
-    const own = await Session.fetchOwnRepos(login, (n) => setStatus(`A carregar repositórios… ${n}`));
+    const own = await Session.fetchOwnRepos(login, (n) => setStatus(`Loading repositories… ${n}`));
     const collab = await Session.fetchCollabRepos(login).catch(() => []);
-    if (login !== state.login) return; // trocou de conta entretanto
+    if (login !== state.login) return; // account switched in the meantime
     await mergeRepos([...own, ...collab]);
     await Session.save(login, { collabRepos: collab.map((r) => r.fullName) });
-    setStatus(`${own.length + collab.length} repositórios carregados.`);
+    setStatus(`${own.length + collab.length} repositories loaded.`);
     setTimeout(() => setStatus(''), 2500);
     render();
   } catch (err) {
-    setStatus(`Não consegui ler os repositórios (${err.message}).`, true);
+    setStatus(`Couldn't read repositories (${err.message}).`, true);
   } finally {
     fetching = false;
     $('refreshBtn').classList.remove('spin');
   }
 }
 
-// ---------- Operações sobre pastas ----------
+// ---------- Folder operations ----------
 
 function folderOf(fullName) {
   const n = fullName.toLowerCase();
@@ -170,7 +170,7 @@ function moveRepo(fullName, folderId) {
 function createFolder(parentId = null) {
   const folder = {
     id: crypto.randomUUID(),
-    name: parentId ? 'Nova subpasta' : 'Nova pasta',
+    name: parentId ? 'New subfolder' : 'New folder',
     collapsed: false,
     repos: [],
     parentId,
@@ -185,7 +185,7 @@ function createFolder(parentId = null) {
 }
 
 function deleteFolder(id) {
-  // Subpastas e repositórios sobem para a pasta-mãe; nada é apagado no GitHub.
+  // Subfolders and repositories move up to the parent; nothing is deleted on GitHub.
   state.folders = FolderTree.remove(state.folders, id);
   save();
   render();
@@ -210,7 +210,7 @@ function startRename(id) {
   const nameEl = document.querySelector(`.folder[data-id="${id}"] > .folder-head .folder-name`);
   const folder = state.folders.find((f) => f.id === id);
   if (!nameEl || !folder) return;
-  nameEl.closest('.folder-head').draggable = false; // senão o input não deixa selecionar texto
+  nameEl.closest('.folder-head').draggable = false; // otherwise the input can't select text
   const input = el('input', { className: 'input', type: 'text', value: folder.name });
   input.addEventListener('click', (e) => e.stopPropagation());
   nameEl.replaceWith(input);
@@ -222,7 +222,7 @@ function startRename(id) {
     if (done) return;
     done = true;
     if (commit && input.value.trim()) folder.name = input.value.trim();
-    input.remove(); // tem de sair antes do render, que ignora pedidos durante a edição
+    input.remove(); // must go before render, which is skipped while editing
     save();
     render();
   };
@@ -233,7 +233,7 @@ function startRename(id) {
   input.addEventListener('blur', () => finish(true));
 }
 
-// ---------- Renderização ----------
+// ---------- Rendering ----------
 
 function setStatus(text, isError = false) {
   const s = $('status');
@@ -242,7 +242,7 @@ function setStatus(text, isError = false) {
   s.classList.toggle('error', isError);
 }
 
-const rtf = new Intl.RelativeTimeFormat('pt', { numeric: 'auto' });
+const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const TIME_UNITS = [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]];
 
 function timeAgo(iso) {
@@ -250,7 +250,7 @@ function timeAgo(iso) {
   for (const [unit, size] of TIME_UNITS) {
     if (Math.abs(secs) >= size) return rtf.format(Math.round(secs / size), unit);
   }
-  return 'agora mesmo';
+  return 'just now';
 }
 
 function languageColor(repo) {
@@ -266,7 +266,7 @@ function matches(fullName) {
 function makeDropTarget(node, folderId) {
   node.addEventListener('dragover', (e) => {
     e.preventDefault();
-    e.stopPropagation(); // só a pasta mais interior fica realçada
+    e.stopPropagation(); // only the innermost folder is highlighted
     document.querySelectorAll('.drop-target').forEach((n) => n !== node && n.classList.remove('drop-target'));
     node.classList.add('drop-target');
   });
@@ -307,37 +307,37 @@ function languageBar(repoNames) {
 }
 
 function render() {
-  if (document.querySelector('.folder-head input')) return; // não interromper a edição de um nome
+  if (document.querySelector('.folder-head input')) return; // don't interrupt a rename
   const container = $('folders');
   const signedIn = !!state.login;
   for (const id of ['toolbar', 'refreshBtn', 'settingsBtn', 'footer']) $(id).hidden = !signedIn;
   if (!signedIn) {
     $('settings').hidden = true;
-    $('subtitle').textContent = state.login === null ? 'A detetar a conta…' : 'Sem sessão iniciada';
+    $('subtitle').textContent = state.login === null ? 'Detecting account…' : 'Signed out';
     container.replaceChildren(state.login === null ? '' : el('div', { className: 'blankslate signed-out' }, icon('lock'),
-      el('h3', { textContent: 'Inicia sessão no GitHub' }),
-      el('p', { textContent: 'A extensão usa a conta com sessão iniciada no github.com. Cada conta tem as suas pastas.' }),
-      el('a', { className: 'btn btn-primary', href: 'https://github.com/login', target: '_blank', rel: 'noopener', textContent: 'Iniciar sessão' })));
+      el('h3', { textContent: 'Sign in to GitHub' }),
+      el('p', { textContent: 'The extension uses the account signed in on github.com. Each account has its own folders.' }),
+      el('a', { className: 'btn btn-primary', href: 'https://github.com/login', target: '_blank', rel: 'noopener', textContent: 'Sign in' })));
     return;
   }
 
   const unsorted = state.repos.map((r) => r.fullName).filter((n) => !folderOf(n));
-  // Permite organizar também o repositório aberto no separador, mesmo que não seja teu.
+  // Also lets you organize the repository open in the current tab, even if it isn't yours.
   const cur = state.currentRepo;
   if (cur && !folderOf(cur) && !unsorted.some((n) => n.toLowerCase() === cur.toLowerCase())) unsorted.unshift(cur);
 
   const nodes = FolderTree.children(state.folders).map((f) => renderFolder(f, 0)).filter(Boolean);
   if (state.folders.length === 0) {
     nodes.unshift(el('div', { className: 'blankslate' }, icon('folderPlus'),
-      el('h3', { textContent: 'Ainda não tens pastas' }),
-      el('p', { textContent: 'Cria uma pasta e arrasta repositórios para dentro dela.' })));
+      el('h3', { textContent: 'No folders yet' }),
+      el('p', { textContent: 'Create a folder and drag repositories into it.' })));
   }
   nodes.push(renderUnsorted(unsorted));
   container.replaceChildren(...nodes.filter(Boolean));
 
   const organized = state.folders.reduce((s, f) => s + f.repos.length, 0);
   const nf = state.folders.length;
-  $('subtitle').textContent = `${nf} pasta${nf === 1 ? '' : 's'} · ${organized} de ${state.repos.length} repositórios organizados`;
+  $('subtitle').textContent = `${nf} folder${nf === 1 ? '' : 's'} · ${organized} of ${state.repos.length} repositories organized`;
 }
 
 function folderHead({ collapsed, onToggle, iconNode, name, count, actions }) {
@@ -361,12 +361,12 @@ function renderFolder(folder, depth) {
   if (searching && !allNames.some(matches)) return null;
   const collapsed = folder.collapsed && !searching;
 
-  const folderIcon = el('button', { className: 'btn-icon btn-sm folder-icon', type: 'button', title: 'Mudar cor' }, icon('folder'));
+  const folderIcon = el('button', { className: 'btn-icon btn-sm folder-icon', type: 'button', title: 'Change color' }, icon('folder'));
   folderIcon.addEventListener('click', (e) => {
     e.stopPropagation();
     cycleColor(folder);
   });
-  const name = el('span', { className: 'folder-name', textContent: folder.name, title: 'Duplo clique para mudar o nome' });
+  const name = el('span', { className: 'folder-name', textContent: folder.name, title: 'Double-click to rename' });
   name.addEventListener('dblclick', () => startRename(folder.id));
 
   const head = folderHead({
@@ -380,13 +380,13 @@ function renderFolder(folder, depth) {
     name,
     count: searching ? `${allNames.filter(matches).length}/${allNames.length}` : allNames.length,
     actions: [
-      iconButton('folderPlus', 'Nova subpasta', () => createFolder(folder.id)),
-      iconButton('edit', 'Mudar nome', () => startRename(folder.id)),
-      iconButton('trash', 'Apagar pasta (o conteúdo sobe para a pasta-mãe)', () => deleteFolder(folder.id), 'btn-danger'),
+      iconButton('folderPlus', 'New subfolder', () => createFolder(folder.id)),
+      iconButton('edit', 'Rename', () => startRename(folder.id)),
+      iconButton('trash', 'Delete folder (contents move up to the parent folder)', () => deleteFolder(folder.id), 'btn-danger'),
     ],
   });
   head.draggable = true;
-  head.title = 'Arrasta para dentro de outra pasta para a tornar subpasta';
+  head.title = 'Drag into another folder to make it a subfolder';
   head.addEventListener('dragstart', (e) => {
     e.stopPropagation();
     e.dataTransfer.setData('text/x-folder', folder.id);
@@ -400,7 +400,7 @@ function renderFolder(folder, depth) {
     const visible = folder.repos.filter(matches);
     if (visible.length) body.append(el('ul', { className: 'repos' }, ...visible.map((n) => renderRepo(n, folder.id))));
     if (folder.repos.length === 0 && subfolders.length === 0) {
-      body.append(el('div', { className: 'empty', textContent: 'Arrasta repositórios ou pastas para aqui' }));
+      body.append(el('div', { className: 'empty', textContent: 'Drag repositories or folders here' }));
     }
   }
 
@@ -425,31 +425,31 @@ function renderUnsorted(names) {
       render();
     },
     iconNode: el('span', { className: 'btn-icon btn-sm folder-icon' }, icon('inbox')),
-    name: el('span', { className: 'folder-name', textContent: 'Sem pasta' }),
+    name: el('span', { className: 'folder-name', textContent: 'Unsorted' }),
     count: state.query ? `${visible.length}/${names.length}` : names.length,
   });
   const body = el('div', { className: 'folder-body' });
   if (!collapsed) {
     body.append(visible.length
       ? el('ul', { className: 'repos' }, ...visible.map((n) => renderRepo(n, UNSORTED)))
-      : el('div', { className: 'empty', textContent: names.length ? 'Nada encontrado.' : 'Todos os repositórios estão organizados 🎉' }));
+      : el('div', { className: 'empty', textContent: names.length ? 'Nothing found.' : 'Every repository is organized 🎉' }));
   }
   const node = el('section', { className: `folder unsorted${collapsed ? ' collapsed' : ''}` }, head, body);
   makeDropTarget(node, UNSORTED);
   return node;
 }
 
-// Um <select> nativo invisível por cima de um botão: alternativa ao arrastar.
+// An invisible native <select> over a button: an alternative to dragging.
 function moveSelect(fullName, currentId) {
-  const select = el('select', { title: 'Mover para pasta' });
-  select.append(new Option('Mover para…', '', true, true));
+  const select = el('select', { title: 'Move to folder' });
+  select.append(new Option('Move to…', '', true, true));
   select.options[0].disabled = true;
   for (const { folder, depth } of FolderTree.flatten(state.folders)) {
     const opt = new Option(FolderTree.optionLabel(folder, depth), folder.id);
     opt.disabled = folder.id === currentId;
     select.append(opt);
   }
-  if (currentId !== UNSORTED) select.append(new Option('— Tirar da pasta —', UNSORTED));
+  if (currentId !== UNSORTED) select.append(new Option('— Remove from folder —', UNSORTED));
   select.addEventListener('change', () => moveRepo(fullName, select.value));
   return el('span', { className: 'btn-icon btn-sm move' }, icon('more'), select);
 }
@@ -468,9 +468,9 @@ function renderRepo(fullName, folderId) {
     dot.style.background = languageColor(repo);
     meta.append(el('span', {}, dot, repo.language));
   }
-  if (repo.stars) meta.append(el('span', { title: 'Estrelas' }, icon('star'), String(repo.stars)));
+  if (repo.stars) meta.append(el('span', { title: 'Stars' }, icon('star'), String(repo.stars)));
   if (repo.forks) meta.append(el('span', { title: 'Forks' }, icon('fork'), String(repo.forks)));
-  if (repo.updatedAt) meta.append(el('span', { title: new Date(repo.updatedAt).toLocaleString('pt-PT') }, `Atualizado ${timeAgo(repo.updatedAt)}`));
+  if (repo.updatedAt) meta.append(el('span', { title: new Date(repo.updatedAt).toLocaleString('en-US') }, `Updated ${timeAgo(repo.updatedAt)}`));
 
   const main = el('div', { className: 'repo-main' },
     el('div', { className: 'repo-title' }, link,
@@ -484,7 +484,7 @@ function renderRepo(fullName, folderId) {
     el('span', { className: 'repo-icon' }, icon(repo.private ? 'lock' : 'repo')), main, moveSelect(fullName, folderId));
   if (state.currentRepo?.toLowerCase() === fullName.toLowerCase()) {
     node.classList.add('current');
-    node.title = 'Repositório aberto no separador atual';
+    node.title = 'Repository open in the current tab';
   }
   node.addEventListener('dragstart', (e) => {
     e.stopPropagation();
@@ -496,7 +496,7 @@ function renderRepo(fullName, folderId) {
   return node;
 }
 
-// ---------- Repositório do separador ativo ----------
+// ---------- Repository in the active tab ----------
 
 const NOT_REPO_OWNERS = new Set(['settings', 'orgs', 'organizations', 'notifications', 'marketplace', 'explore',
   'topics', 'collections', 'pulls', 'issues', 'codespaces', 'sponsors', 'search', 'trending', 'login', 'new']);
@@ -511,7 +511,7 @@ async function detectCurrentRepo() {
   }
 }
 
-// ---------- Cabeçalho / definições / exportar / importar ----------
+// ---------- Header / settings / export / import ----------
 
 function renderProfile() {
   const login = state.login;
@@ -554,7 +554,7 @@ function bindSettings() {
       if (!Array.isArray(data.folders)) throw new Error();
       state.folders = data.folders.map((f) => ({
         id: f.id || crypto.randomUUID(),
-        name: String(f.name || 'Pasta'),
+        name: String(f.name || 'Folder'),
         collapsed: !!f.collapsed,
         repos: Array.isArray(f.repos) ? f.repos.map(String) : [],
         parentId: f.parentId || null,
@@ -562,15 +562,15 @@ function bindSettings() {
       }));
       await save();
       render();
-      setStatus('Pastas importadas.');
+      setStatus('Folders imported.');
     } catch {
-      setStatus('Ficheiro inválido.', true);
+      setStatus('Invalid file.', true);
     }
     e.target.value = '';
   });
 }
 
-// ---------- Arranque ----------
+// ---------- Startup ----------
 
 async function init() {
   await load();
@@ -579,7 +579,7 @@ async function init() {
   $('refreshBtn').append(icon('refresh'));
   $('settingsBtn').append(icon('gear'));
   $('searchIcon').replaceWith(icon('search'));
-  $('newFolderBtn').append(icon('plus'), 'Pasta');
+  $('newFolderBtn').append(icon('plus'), 'Folder');
 
   $('newFolderBtn').addEventListener('click', () => createFolder());
   $('refreshBtn').addEventListener('click', fetchRepos);
@@ -588,8 +588,8 @@ async function init() {
     render();
   });
 
-  // Mantém-se sincronizado com a página do GitHub, incluindo trocas de conta
-  // (a página regista a conta com sessão iniciada sempre que é aberta).
+  // Stays in sync with the GitHub page, including account switches
+  // (the page records the signed-in account every time it loads).
   chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area !== 'local' && area !== 'sync') return;
     const switched = 'account' in changes;
@@ -607,7 +607,7 @@ async function init() {
   render();
   detectCurrentRepo();
   detectAccount();
-  // Ao voltar ao painel (ex.: depois de trocar de conta noutro separador), confirma a conta.
+  // When returning to the panel (e.g. after switching accounts in another tab), re-check the account.
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && detectAccount());
 }
 

@@ -1,11 +1,10 @@
-// Gera a secção "os meus projetos" do README do perfil (github.com/<user>/<user>)
-// a partir das pastas. Só o bloco entre os marcadores é da extensão; o resto do
-// README nunca é tocado.
+// Builds the "my projects" section of the profile README (github.com/<user>/<user>)
+// from the folders. Only the block between the markers belongs to the extension.
 const ProfileReadme = {
   START: '<!-- REPO-FOLDERS:START -->',
   END: '<!-- REPO-FOLDERS:END -->',
 
-  // Logótipos do simple-icons (shields.io) para as linguagens mais comuns.
+  // simple-icons logos (shields.io) for the most common languages.
   LOGOS: {
     JavaScript: 'javascript', TypeScript: 'typescript', Python: 'python', HTML: 'html5', CSS: 'css',
     'C++': 'cplusplus', C: 'c', Java: 'openjdk', Go: 'go', Rust: 'rust', PHP: 'php', Ruby: 'ruby',
@@ -13,7 +12,7 @@ const ProfileReadme = {
     'Jupyter Notebook': 'jupyter', Lua: 'lua', R: 'r', Dockerfile: 'docker', SCSS: 'sass', MDX: 'mdx',
   },
 
-  // "rgb(227, 76, 38)" ou "#e34c26" -> "e34c26"
+  // "rgb(227, 76, 38)" or "#e34c26" -> "e34c26"
   hex(color) {
     if (!color) return '8b949e';
     const rgb = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -22,30 +21,30 @@ const ProfileReadme = {
   },
 
   badge(language, color) {
-    // Na sintaxe do shields.io, "-" e "_" têm significado: duplicam-se para serem literais.
+    // In shields.io syntax "-" and "_" are special: doubling them makes them literal.
     const label = encodeURIComponent(language.replace(/-/g, '--').replace(/_/g, '__').replace(/ /g, '_'));
     const logo = this.LOGOS[language] ? `&logo=${this.LOGOS[language]}&logoColor=white` : '';
     return `![${language}](https://img.shields.io/badge/${label}-${this.hex(color)}?style=flat-square${logo})`;
   },
 
-  // Colunas possíveis na tabela (o nome do projeto está sempre presente).
+  // Available table columns (the project name is always shown).
   COLUMNS: [
-    { id: 'description', label: 'Descrição', header: 'Descrição' },
-    { id: 'language', label: 'Linguagem', header: 'Linguagem' },
-    { id: 'stars', label: 'Estrelas', header: '⭐', align: 'right' },
+    { id: 'description', label: 'Description', header: 'Description' },
+    { id: 'language', label: 'Language', header: 'Language' },
+    { id: 'stars', label: 'Stars', header: '⭐', align: 'right' },
     { id: 'forks', label: 'Forks', header: 'Forks', align: 'right' },
-    { id: 'issues', label: 'Issues abertas', header: 'Issues', align: 'right' },
-    { id: 'license', label: 'Licença', header: 'Licença' },
-    { id: 'topics', label: 'Tópicos', header: 'Tópicos' },
-    { id: 'contributors', label: 'Contribuidores', header: '👥', align: 'right' },
-    { id: 'updated', label: 'Última atualização', header: 'Atualizado' },
-    { id: 'created', label: 'Data de criação', header: 'Criado' },
+    { id: 'issues', label: 'Open issues', header: 'Issues', align: 'right' },
+    { id: 'license', label: 'License', header: 'License' },
+    { id: 'topics', label: 'Topics', header: 'Topics' },
+    { id: 'contributors', label: 'Contributors', header: '👥', align: 'right' },
+    { id: 'updated', label: 'Last updated', header: 'Updated' },
+    { id: 'created', label: 'Created', header: 'Created' },
     { id: 'homepage', label: 'Website', header: 'Website' },
   ],
   DEFAULT_COLUMNS: ['description', 'language', 'stars'],
 
   monthYear(iso) {
-    return iso ? new Date(iso).toLocaleDateString('pt-PT', { month: 'short', year: 'numeric' }) : '—';
+    return iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—';
   },
 
   value(id, repo, meta, languageColor) {
@@ -73,11 +72,11 @@ const ProfileReadme = {
     return (text || '').replace(/\r?\n/g, ' ').replace(/\|/g, '\\|').trim() || '—';
   },
 
-  // folders: árvore de pastas (FolderTree); repos: cache com metadados;
-  // languageColor: (repo) => cor; meta: contribuidores por repo; columns: ids de COLUMNS
+  // folders: folder tree (FolderTree); repos: cached repo data;
+  // languageColor: (repo) => color; meta: contributors per repo; columns: ids from COLUMNS
   build(folders, repos, { owner, includePrivate = false, languageColor, date = new Date(), meta = {}, columns = this.DEFAULT_COLUMNS }) {
     const cols = this.COLUMNS.filter((c) => columns.includes(c.id));
-    const header = `| Projeto | ${cols.map((c) => c.header).join(' | ')} |`.replace(' |  |', ' |');
+    const header = `| Project | ${cols.map((c) => c.header).join(' | ')} |`.replace(' |  |', ' |');
     const divider = `| :-- | ${cols.map((c) => (c.align === 'right' ? '--:' : ':--')).join(' | ')} |`.replace(' |  |', ' |');
     const byName = new Map(repos.map((r) => [r.fullName.toLowerCase(), r]));
     const visible = (fullName) => {
@@ -88,7 +87,7 @@ const ProfileReadme = {
 
     const lines = [
       this.START,
-      '<!-- Gerado pela extensão GitHub Repo Folders. O que escreveres dentro deste bloco é substituído. -->',
+      '<!-- Generated by the GitHub Repo Folders extension. Anything inside this block gets replaced. -->',
       '',
     ];
 
@@ -114,19 +113,8 @@ const ProfileReadme = {
     };
     for (const top of FolderTree.children(folders)) renderFolder(top, 0);
 
-    const day = date.toLocaleDateString('pt-PT');
-    lines.push(`<sub>Atualizado a ${day} · organizado com GitHub Repo Folders</sub>`, this.END);
+    const day = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    lines.push(`<sub>Updated ${day} · organized with GitHub Repo Folders</sub>`, this.END);
     return lines.join('\n');
-  },
-
-  // Substitui o bloco entre os marcadores; se não existir, acrescenta-o no fim.
-  apply(readme, section) {
-    const start = readme.indexOf(this.START);
-    const end = readme.indexOf(this.END, start);
-    if (start !== -1 && end !== -1) {
-      return { text: readme.slice(0, start) + section + readme.slice(end + this.END.length), appended: false };
-    }
-    const base = readme.replace(/\s*$/, '');
-    return { text: `${base}${base ? '\n\n' : ''}## 📁 Os meus projetos\n\n${section}\n`, appended: true };
   },
 };

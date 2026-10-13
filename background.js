@@ -1,8 +1,8 @@
-// Abre o painel lateral ao clicar no ícone da extensão.
+// Open the side panel when the extension icon is clicked.
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
-// API pública do GitHub, sem autenticação (60 pedidos/hora). Os dados da conta
-// (incluindo repositórios privados) são lidos das páginas do github.com com a sessão.
+// GitHub's public API, unauthenticated (60 requests/hour). Account data
+// (including private repositories) is read from github.com pages with the session.
 const API_HEADERS = { Accept: 'application/vnd.github+json' };
 
 function toRepo(r) {
@@ -17,7 +17,7 @@ function toRepo(r) {
     createdAt: r.created_at,
     stars: r.stargazers_count,
     forks: r.forks_count,
-    openIssues: r.open_issues_count, // inclui PRs abertos
+    openIssues: r.open_issues_count, // includes open PRs
     license: r.license?.spdx_id && r.license.spdx_id !== 'NOASSERTION' ? r.license.spdx_id : (r.license?.name || ''),
     topics: r.topics || [],
     size: r.size, // KB
@@ -25,14 +25,14 @@ function toRepo(r) {
   };
 }
 
-// Dados que a lista do perfil não mostra (data de criação, issues, tamanho…). Só repos públicos.
+// Data the profile list doesn't show (created date, issues, size…). Public repos only.
 async function fetchRepoInfo(fullName) {
   const res = await fetch(`https://api.github.com/repos/${fullName}`, { headers: API_HEADERS });
   if (!res.ok) throw new Error(`erro ${res.status}`);
   return toRepo(await res.json());
 }
 
-// Renderiza Markdown com o motor do próprio GitHub, para a pré-visualização ser fiel.
+// Renders Markdown with GitHub's own engine so the preview is accurate.
 async function renderMarkdown(owner, text) {
   const res = await fetch('https://api.github.com/markdown', {
     method: 'POST',
@@ -43,7 +43,7 @@ async function renderMarkdown(owner, text) {
   return res.text();
 }
 
-// Responde a mensagens assíncronas no formato { ...resultado } ou { error }.
+// Answers async messages as { ...result } or { error }.
 const HANDLERS = {
   fetchRepoInfo: (msg) => fetchRepoInfo(msg.fullName).then((repo) => ({ repo })),
   renderMarkdown: (msg) => renderMarkdown(msg.owner, msg.text).then((html) => ({ html })),

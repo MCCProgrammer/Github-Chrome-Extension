@@ -1,13 +1,13 @@
-// Árvore de pastas, partilhada pela página do GitHub (content.js) e pelo painel lateral.
-// As pastas são guardadas numa lista simples; cada uma aponta para a mãe com parentId
-// (null/ausente = pasta de topo).
+// Folder tree, shared by the GitHub page (content.js) and the side panel.
+// Folders are stored as a flat list; each points to its parent via parentId
+// (null/missing = top-level folder).
 const FolderTree = {
   byId(folders, id) {
     return folders.find((f) => f.id === id);
   },
 
   parentOf(folders, folder) {
-    // Uma mãe que já não existe é tratada como topo.
+    // A parent that no longer exists is treated as top level.
     return folder.parentId ? this.byId(folders, folder.parentId) || null : null;
   },
 
@@ -15,7 +15,7 @@ const FolderTree = {
     return folders.filter((f) => (this.parentOf(folders, f)?.id || null) === parentId);
   },
 
-  // ["Universidade projects", "Aed Projects"]
+  // ["University projects", "Algorithms"]
   path(folders, id) {
     const names = [];
     const seen = new Set();
@@ -35,12 +35,12 @@ const FolderTree = {
     return false;
   },
 
-  // Repositórios da pasta e de todas as subpastas.
+  // Repositories in the folder and all its subfolders.
   allRepos(folders, folder) {
     return [...folder.repos, ...this.children(folders, folder.id).flatMap((c) => this.allRepos(folders, c))];
   },
 
-  // Lista em ordem de árvore: [{ folder, depth }]
+  // List in tree order: [{ folder, depth }]
   flatten(folders, parentId = null, depth = 0) {
     return this.children(folders, parentId).flatMap((folder) => [
       { folder, depth },
@@ -48,20 +48,20 @@ const FolderTree = {
     ]);
   },
 
-  // Muda a pasta de sítio. Recusa criar ciclos (pôr uma pasta dentro de si própria).
+  // Moves a folder. Refuses to create cycles (putting a folder inside itself).
   setParent(folders, id, parentId) {
     if (id === parentId || (parentId && this.isDescendant(folders, parentId, id))) return false;
     const folder = this.byId(folders, id);
     if (!folder) return false;
     folder.parentId = parentId || null;
-    // Coloca-a no fim da lista para aparecer como última entre as irmãs.
+    // Move it to the end of the list so it shows last among its siblings.
     folders.splice(folders.indexOf(folder), 1);
     folders.push(folder);
     return true;
   },
 
-  // Apaga uma pasta: subpastas e repositórios sobem para a pasta-mãe
-  // (ou, se for de topo, as subpastas passam a topo e os repos ficam sem pasta).
+  // Deletes a folder: subfolders and repositories move up to the parent
+  // (or, for a top-level folder, subfolders become top-level and repos become unsorted).
   remove(folders, id) {
     const folder = this.byId(folders, id);
     if (!folder) return folders;
@@ -71,7 +71,7 @@ const FolderTree = {
     return folders.filter((f) => f.id !== id);
   },
 
-  // Opções para um <select> "mover para": nomes indentados conforme a profundidade.
+  // Options for a "move to" <select>: names indented by depth.
   optionLabel(folder, depth) {
     return `${'   '.repeat(depth)}${depth ? '↳ ' : ''}${folder.name}`;
   },

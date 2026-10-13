@@ -5,224 +5,224 @@
 <h1 align="center">GitHub Repo Folders</h1>
 
 <p align="center">
-  Organiza os teus repositórios do GitHub em <b>pastas e subpastas</b> — diretamente na página do teu perfil e num painel lateral do Chrome.
+  Organize your GitHub repositories into <b>folders and subfolders</b> — right on your profile page and in a Chrome side panel.
 </p>
 
 <p align="center">
   <img alt="Manifest V3" src="https://img.shields.io/badge/Manifest-V3-1f2328?style=flat-square">
   <img alt="Chrome" src="https://img.shields.io/badge/Chrome-114%2B-1f2328?style=flat-square&logo=googlechrome&logoColor=white">
-  <img alt="Sem dependências" src="https://img.shields.io/badge/dependências-0-1f2328?style=flat-square">
-  <img alt="Licença MIT" src="https://img.shields.io/badge/licença-MIT-1f2328?style=flat-square">
+  <img alt="No dependencies" src="https://img.shields.io/badge/dependencies-0-1f2328?style=flat-square">
+  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-1f2328?style=flat-square">
 </p>
 
 ---
 
-O GitHub mostra todos os repositórios numa lista única. Quando tens dezenas (projetos da faculdade, trabalho, experiências, forks…) fica difícil encontrar as coisas. Esta extensão junta à lista de repositórios um painel de pastas onde arrastas cada repositório para o sítio certo. Não há nada para configurar: a extensão usa a conta com sessão iniciada no github.com e tudo fica guardado no teu browser.
+GitHub shows all your repositories in one long list. Once you have dozens of them (school projects, work, experiments, forks…) things get hard to find. This extension adds a folders panel to your repository list where you drag each repository to the right place. There's nothing to configure: it uses the account you're signed in with on github.com, and your folders sync across computers through your Chrome profile.
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
-    <img src="docs/screenshot-light.png" alt="Painel de pastas na página de repositórios do GitHub">
+    <img src="docs/screenshot-light.png" alt="Folders panel on the GitHub repositories page">
   </picture>
 </p>
 
-## Índice
+## Contents
 
-- [Funcionalidades](#funcionalidades)
-- [Instalação](#instalação)
-- [Como usar](#como-usar)
-- [Contas](#contas)
-- [README do perfil](#readme-do-perfil)
-- [Sincronização entre computadores](#sincronização-entre-computadores)
-- [Cópia de segurança](#cópia-de-segurança-exportar--importar)
-- [Privacidade e permissões](#privacidade-e-permissões)
-- [Problemas comuns](#problemas-comuns)
-- [Estrutura do projeto](#estrutura-do-projeto)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Accounts](#accounts)
+- [Profile README](#profile-readme)
+- [Syncing across computers](#syncing-across-computers)
+- [Backup (export / import)](#backup-export--import)
+- [Privacy and permissions](#privacy-and-permissions)
+- [Troubleshooting](#troubleshooting)
+- [Project structure](#project-structure)
 
-## Funcionalidades
+## Features
 
-**Na página dos teus repositórios** (`github.com/<a-tua-conta>?tab=repositories`)
+**On your repositories page** (`github.com/<your-account>?tab=repositories`)
 
-- 📁 Painel de **pastas e subpastas** por cima da lista de repositórios.
-- 🖱️ **Arrastar e largar** repositórios da lista (incluindo os resultados de *Find a repository…*) para dentro das pastas, e pastas para dentro de outras pastas.
-- 🎨 Cor própria para cada pasta, barra com as linguagens usadas e data da última atualização.
-- 📊 **Colunas configuráveis**: descrição, linguagem, contribuidores, atividade do último ano, estrelas, forks, issues, licença, tópicos, tamanho, website…
-- 🔎 Pesquisa dentro das pastas.
-- 🔄 Botão **Sincronizar**, que lê todas as páginas da lista (não só a primeira).
-- 🤝 Secção **Colaborações** com os repositórios de outras pessoas ou organizações onde participas.
-- 📝 Geração de uma secção para o **README do perfil** com as tuas pastas, pronta a copiar.
+- 📁 A **folders and subfolders** panel above the repository list.
+- 🖱️ **Drag and drop** repositories from the list (including *Find a repository…* search results) into folders, and folders into other folders.
+- 🎨 A color per folder, a bar with the languages used and when it was last updated.
+- 📊 **Configurable columns**: description, language, contributors, last year's activity, stars, forks, issues, license, topics, size, website…
+- 🔎 Search inside your folders.
+- 🔄 A **Sync** button that reads every page of the list, not just the first.
+- 🤝 An **Unsorted collaborations** section with repositories from other people or organizations you contribute to.
+- 📝 Generates a section for your **profile README** listing your folders, ready to copy.
 
-**No painel lateral** (clica no ícone da extensão)
+**In the side panel** (click the extension icon)
 
-- As mesmas pastas, disponíveis em qualquer página, com os repositórios públicos e privados.
-- O repositório aberto no separador atual fica destacado, para o arrumares logo.
-- Pesquisa, criação, renomeação e cores de pastas, e menu "Mover para…" como alternativa ao arrastar.
-- Deteta sozinho a conta com sessão iniciada e muda de pastas quando trocas de conta.
-- Exportar e importar as pastas em JSON.
-- ☁️ As pastas **sincronizam com a tua conta Google do Chrome**: noutro computador aparecem já organizadas.
-- Tema claro e escuro, igual ao do GitHub.
+- The same folders, available on any page, with public and private repositories.
+- The repository open in the current tab is highlighted so you can file it right away.
+- Search, create, rename and color folders, plus a "Move to…" menu as an alternative to dragging.
+- Detects the signed-in GitHub account and switches folders when you switch accounts.
+- ☁️ Folders **sync with your Chrome Google account**: on another computer they show up already organized.
+- Export and import folders as JSON.
+- Light and dark themes, matching GitHub.
 
-As duas vistas partilham os mesmos dados: o que muda numa aparece logo na outra.
+Both views share the same data: a change in one shows up in the other right away.
 
-## Instalação
+## Installation
 
-A extensão ainda não está na Chrome Web Store; instala-se a partir do código (demora menos de um minuto).
+The extension isn't on the Chrome Web Store yet; you install it from source (takes under a minute).
 
-1. **Descarrega o código**
-   - Com Git:
+1. **Get the code**
+   - Download **github-repo-folders-vX.Y.Z.zip** from the [latest release](https://github.com/MCCProgrammer/Github-Chrome-Extension/releases/latest) and unzip it, **or**
+   - clone it with Git:
      ```bash
      git clone https://github.com/MCCProgrammer/Github-Chrome-Extension.git
      ```
-   - Ou carrega em **Code → Download ZIP** nesta página e descomprime o ficheiro.
-2. Abre `chrome://extensions` no Chrome.
-3. Liga o **Modo de programador** (canto superior direito).
-4. Carrega em **Carregar sem compactação** (*Load unpacked*) e escolhe a pasta do projeto (a que tem o `manifest.json`).
-5. Fixa a extensão na barra: ícone do puzzle 🧩 → 📌 ao lado de *GitHub Repo Folders*.
+2. Open `chrome://extensions` in Chrome.
+3. Turn on **Developer mode** (top-right corner).
+4. Click **Load unpacked** and pick the project folder (the one containing `manifest.json`).
+5. Pin the extension: puzzle icon 🧩 → 📌 next to *GitHub Repo Folders*.
 
-Funciona no Chrome 114 ou mais recente e noutros browsers baseados em Chromium com suporte para painel lateral (Edge, Brave, Arc, Opera…).
+Works in Chrome 114+ and other Chromium browsers with side panel support (Edge, Brave, Arc, Opera…).
 
-### Atualizar
+### Updating
 
 ```bash
 cd Github-Chrome-Extension
 git pull
 ```
 
-Depois, em `chrome://extensions`, carrega no botão ↻ da extensão e recarrega as páginas do GitHub que tiveres abertas. As tuas pastas mantêm-se.
+Then click ↻ on the extension in `chrome://extensions` and reload any open GitHub pages. Your folders are kept.
 
-## Como usar
+## Usage
 
-### 1. Na página dos teus repositórios
+### 1. On your repositories page
 
-1. Com sessão iniciada no GitHub, abre o teu perfil → **Repositories** (`https://github.com/<a-tua-conta>?tab=repositories`). O painel só aparece na lista da tua própria conta, não nos perfis de outras pessoas.
-2. Por cima da lista aparece o painel **Pastas**. Carrega em **Nova pasta** e escreve um nome (Enter para confirmar).
-3. **Arrasta** um repositório da lista para a pasta. Também podes usar o botão **Pasta** que aparece ao lado do nome de cada repositório.
-4. Os repositórios que já estão numa pasta deixam de aparecer na lista de baixo, por isso o que fica na lista é o que ainda falta arrumar.
+1. While signed in to GitHub, open your profile → **Repositories** (`https://github.com/<your-account>?tab=repositories`). The panel only appears on your own account's list, not on other people's profiles.
+2. A **Folders** panel appears above the list. Click **New folder** and type a name (Enter to confirm).
+3. **Drag** a repository from the list into the folder, or use the **Folder** button next to each repository's name.
+4. Repositories already in a folder are hidden from the list below, so what's left is what still needs sorting.
 
-| Ação | Como |
+| Action | How |
 | --- | --- |
-| Criar subpasta | Botão 📁+ no cabeçalho da pasta |
-| Tornar uma pasta subpasta de outra | Arrasta o cabeçalho de uma pasta para dentro de outra |
-| Voltar a pôr uma pasta no topo | Arrasta-a para uma zona vazia do painel |
-| Mudar o nome | Duplo clique no nome, ou botão ✎ |
-| Mudar a cor | Clica no ícone da pasta |
-| Tirar um repositório de uma pasta | Menu ⋯ → *Tirar da pasta*, ou arrasta-o para fora |
-| Apagar uma pasta | Botão 🗑 — o conteúdo sobe para a pasta-mãe; **nada é apagado no GitHub** |
-| Escolher a informação de cada linha | Botão **Colunas** |
-| Ler todos os repositórios | Botão **Sincronizar** (faz-se sozinho na primeira visita) |
+| Create a subfolder | 📁+ button in the folder header |
+| Nest a folder inside another | Drag a folder's header into another folder |
+| Move a folder back to the top | Drag it to an empty area of the panel |
+| Rename | Double-click the name, or the ✎ button |
+| Change color | Click the folder icon |
+| Take a repository out of a folder | ⋯ menu → *Remove from folder*, or drag it out |
+| Delete a folder | 🗑 button — contents move up to the parent folder; **nothing is deleted on GitHub** |
+| Choose what each row shows | **Columns** button |
+| Load every repository | **Sync** button (runs automatically on the first visit) |
 
-> A pesquisa *Find a repository…* do GitHub continua a funcionar: os resultados também se podem arrastar para as pastas.
+> GitHub's *Find a repository…* search keeps working: search results can be dragged into folders too.
 
-### 2. No painel lateral
+### 2. In the side panel
 
-1. Clica no ícone da extensão na barra do Chrome para abrir o painel lateral.
-2. A conta é detetada automaticamente e os repositórios (incluindo os privados) são carregados. Se não tiveres sessão iniciada, aparece um botão para **Iniciar sessão**.
-3. Arrasta repositórios entre pastas, ou usa o menu ⋯ de cada linha.
-4. Ao navegares no GitHub, o repositório que tens aberto aparece destacado a amarelo, para o meteres numa pasta.
+1. Click the extension icon in Chrome's toolbar to open the side panel.
+2. The signed-in account is detected automatically and your repositories (including private ones) are loaded. If you're signed out, a **Sign in** button appears.
+3. Drag repositories between folders, or use each row's ⋯ menu.
+4. As you browse GitHub, the repository you have open is highlighted in yellow so you can file it.
 
-## Contas
+## Accounts
 
-Não há utilizador nem token para configurar. A extensão lê a conta com sessão iniciada no github.com e usa essa sessão para ler as listas de repositórios. É assim que aparecem também os repositórios privados.
+There's no username or token to set up. The extension reads which account is signed in on github.com and uses that session to read your repository lists — which is how private repositories show up too.
 
-- **Cada conta tem as suas pastas.** Se trocares de conta no GitHub (menu do avatar → *Switch account*), o painel lateral passa para as pastas dessa conta. Ao voltares à conta anterior, as pastas dela estão lá.
-- O painel na página só aparece na lista de repositórios da **tua** conta. Nos perfis de outras pessoas o GitHub fica como sempre.
-- Em **⚙ Conta** no painel lateral vês qual é a conta detetada.
+- **Each account has its own folders.** If you switch accounts on GitHub (avatar menu → *Switch account*), the side panel switches to that account's folders. Switch back and the previous folders are still there.
+- The in-page panel only appears on **your** account's repository list. Other people's profiles look exactly as usual.
+- **⚙ Account** in the side panel shows which account was detected.
 
-## README do perfil
+## Profile README
 
-O GitHub mostra no teu perfil o README do repositório especial `<utilizador>/<utilizador>`. A extensão gera uma secção com as tuas pastas e projetos:
+GitHub shows the README of the special `<your-account>/<your-account>` repository on your profile. The extension can generate a section listing your folders and projects:
 
-1. Na página dos teus repositórios, carrega em **README** (só aparece no teu próprio perfil, e quando tens pastas).
-2. Escolhe as colunas e se queres incluir repositórios privados. Vês a pré-visualização tal como o GitHub a vai mostrar.
-3. Carrega em **Copiar Markdown** e cola no `README.md` do repositório `<a-tua-conta>/<a-tua-conta>` (o botão **Abrir repositório do README** leva-te lá).
+1. On your repositories page, click **README** (only shown when you have folders).
+2. Choose the columns and whether to include private repositories. The preview looks exactly as GitHub will render it.
+3. Click **Copy Markdown** and paste it into `README.md` of `<your-account>/<your-account>` (the **Open README repository** button takes you there).
 
-A secção fica entre `<!-- REPO-FOLDERS:START -->` e `<!-- REPO-FOLDERS:END -->`. Para atualizar mais tarde, substitui só esse bloco.
+The section sits between `<!-- REPO-FOLDERS:START -->` and `<!-- REPO-FOLDERS:END -->`. To update it later, replace just that block.
 
-## Sincronização entre computadores
+## Syncing across computers
 
-As pastas são guardadas no `chrome.storage.sync`, que acompanha a conta Google com sessão iniciada no Chrome. Noutro computador basta:
+Folders are stored in `chrome.storage.sync`, which follows the Google account signed in to Chrome. On another computer you just need to:
 
-1. Ter sessão iniciada no Chrome com a mesma conta Google e a sincronização de **Extensões** ligada (`chrome://settings/syncSetup` → *Gerir o que sincronizas*);
-2. Instalar a extensão (ver [Instalação](#instalação));
-3. Iniciar sessão no GitHub com a mesma conta.
+1. Be signed in to Chrome with the same Google account, with **Extensions** sync turned on (`chrome://settings/syncSetup` → *Manage what you sync*);
+2. Install the extension (see [Installation](#installation));
+3. Sign in to GitHub with the same account.
 
-As pastas aparecem já organizadas e cada alteração passa para os outros computadores em poucos segundos. A lista de repositórios é lida outra vez do GitHub em cada computador.
+Your folders show up already organized, and every change reaches your other computers within seconds. The repository list itself is re-read from GitHub on each computer.
 
-> O `manifest.json` tem uma `key` que fixa o ID da extensão (`oohheekikjbgehgidbclgfjdaneebeaa`). É isso que permite ao Chrome reconhecer a mesma extensão em computadores diferentes, mesmo instalada a partir do código. Não a removas.
+> `manifest.json` contains a `key` that pins the extension ID (`oohheekikjbgehgidbclgfjdaneebeaa`). That's what lets Chrome recognize it as the same extension on different computers, even when loaded from source. Don't remove it.
 
-O sync do Chrome guarda até 100 KB por extensão, o que chega para centenas de pastas e milhares de repositórios. Se esse limite for ultrapassado, as pastas continuam guardadas no computador e deixam de sincronizar.
+Chrome sync allows up to 100 KB per extension, enough for hundreds of folders and thousands of repositories. If that limit is ever exceeded, folders keep being saved on the computer and simply stop syncing.
 
-## Cópia de segurança (exportar / importar)
+## Backup (export / import)
 
-As pastas ficam guardadas no browser. Para as passares para outro computador ou fazeres uma cópia de segurança:
+To keep a backup or move folders manually:
 
-- **⚙ Conta → Exportar pastas** descarrega `github-repo-folders.json` (as pastas da conta atual);
-- **⚙ Conta → Importar pastas** carrega esse ficheiro noutro browser.
+- **⚙ Account → Export folders** downloads `github-repo-folders.json` (the current account's folders);
+- **⚙ Account → Import folders** loads that file in another browser.
 
-> ⚠️ Se removeres a extensão e não usares a sincronização do Chrome, as pastas são apagadas. Exporta-as antes.
+> ⚠️ If you remove the extension and aren't using Chrome sync, your folders are deleted. Export them first.
 
-## Privacidade e permissões
+## Privacy and permissions
 
-Não há servidores, análises de utilização nem rastreio. Não pede nem guarda palavras-passe ou tokens. Os únicos pedidos de rede são para `github.com` (com a sessão que já tens no browser) e para a API pública `api.github.com`.
+No servers, no analytics, no tracking. It never asks for or stores passwords or tokens. The only network requests go to `github.com` (with the session you already have in the browser) and to the public `api.github.com` API.
 
-| Permissão | Para quê |
+| Permission | Why |
 | --- | --- |
-| `storage` | Guardar as pastas (sincronizadas com a tua conta Google do Chrome) e a cache dos repositórios de cada conta |
-| `sidePanel` | Mostrar o painel lateral ao clicar no ícone |
-| `tabs` | Saber que repositório está aberto no separador atual, para o destacar |
-| `https://github.com/*` | Detetar a conta com sessão iniciada e ler as listas de repositórios (incluindo privados) |
-| `https://api.github.com/*` | Dados extra de repositórios públicos (data de criação, tamanho…) e pré-visualização do README |
-| Script em `https://github.com/*` | Desenhar o painel de pastas na página dos repositórios |
+| `storage` | Store folders (synced with your Chrome Google account) and each account's repository cache |
+| `sidePanel` | Show the side panel when you click the icon |
+| `tabs` | Know which repository is open in the current tab, to highlight it |
+| `https://github.com/*` | Detect the signed-in account and read repository lists (including private ones) |
+| `https://api.github.com/*` | Extra data for public repositories (created date, size…) and the README preview |
+| Script on `https://github.com/*` | Draw the folders panel on the repositories page |
 
-## Problemas comuns
+## Troubleshooting
 
 <details>
-<summary><b>O painel não aparece na página do perfil</b></summary>
+<summary><b>The panel doesn't appear on my profile</b></summary>
 
-Confirma que estás no separador **Repositories** da **tua** conta (`?tab=repositories`) e com sessão iniciada. O painel não aparece nos perfis de outras pessoas. Se acabaste de instalar ou atualizar a extensão, recarrega a página.
+Make sure you're on the **Repositories** tab of **your own** account (`?tab=repositories`) and signed in. The panel doesn't appear on other people's profiles. If you just installed or updated the extension, reload the page.
 </details>
 
 <details>
-<summary><b>Faltam repositórios</b></summary>
+<summary><b>Some repositories are missing</b></summary>
 
-Carrega em **Sincronizar** no painel da página. A sincronização lê todas as páginas da lista, não só a primeira.
+Click **Sync** in the in-page panel. Sync reads every page of the list, not just the first.
 </details>
 
 <details>
-<summary><b>O painel lateral mostra a conta errada</b></summary>
+<summary><b>The side panel shows the wrong account</b></summary>
 
-O painel confirma a conta sempre que é aberto. Se trocaste de conta noutro separador, fecha e volta a abrir o painel, ou recarrega uma página do GitHub.
+The panel re-checks the account every time it opens. If you switched accounts in another tab, close and reopen the panel, or reload a GitHub page.
 </details>
 
 <details>
-<summary><b>Não aparecem as colaborações</b></summary>
+<summary><b>Collaborations don't show up</b></summary>
 
-As colaborações são lidas de `github.com/settings/repositories` com a tua sessão. Carrega em **Sincronizar** (na página) ou em ↻ (no painel lateral) para as atualizar.
+Collaborations are read from `github.com/settings/repositories` with your session. Click **Sync** (on the page) or ↻ (in the side panel) to refresh them.
 </details>
 
-## Estrutura do projeto
+## Project structure
 
 ```
-├── manifest.json      # Configuração da extensão (Manifest V3)
-├── background.js      # Service worker: API pública do GitHub e abertura do painel lateral
-├── github-session.js  # Conta com sessão iniciada, dados por conta e leitura das páginas do GitHub
-├── content.js         # Painel de pastas na página github.com/<user>?tab=repositories
-├── content.css        #   └ estilos do painel na página
-├── folders-core.js    # Lógica da árvore de pastas (partilhada pelas duas vistas)
-├── readme.js          # Geração da secção para o README do perfil
-├── sidepanel.html     # Painel lateral
+├── manifest.json      # Extension configuration (Manifest V3)
+├── background.js      # Service worker: public GitHub API and opening the side panel
+├── github-session.js  # Signed-in account, per-account storage and sync, reading GitHub pages
+├── content.js         # Folders panel on github.com/<user>?tab=repositories
+├── content.css        #   └ in-page panel styles
+├── folders-core.js    # Folder tree logic (shared by both views)
+├── readme.js          # Profile README section generator
+├── sidepanel.html     # Side panel
 ├── sidepanel.js
 ├── sidepanel.css
-├── icons/             # Ícones (icon.svg é o original)
-└── docs/              # Imagens deste README
+├── icons/             # Icons (icon.svg is the source)
+└── docs/              # Images for this README
 ```
 
-O projeto não tem dependências nem passo de *build*: é JavaScript puro, carregado diretamente pelo Chrome. Para desenvolver, edita os ficheiros, carrega em ↻ em `chrome://extensions` e recarrega a página do GitHub.
+No dependencies and no build step: plain JavaScript loaded directly by Chrome. To develop, edit the files, click ↻ in `chrome://extensions` and reload the GitHub page.
 
-## Contribuir
+## Contributing
 
-Sugestões e *pull requests* são bem-vindos. Abre uma [issue](https://github.com/MCCProgrammer/Github-Chrome-Extension/issues) para reportar um problema ou propor uma ideia.
+Suggestions and pull requests are welcome. Open an [issue](https://github.com/MCCProgrammer/Github-Chrome-Extension/issues) to report a bug or propose an idea.
 
-## Licença
+## License
 
 [MIT](LICENSE) © MCCarmo

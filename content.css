@@ -1,4 +1,4 @@
-/* Painel de pastas — usa as variáveis do Primer (GitHub) para seguir o tema claro/escuro do site. */
+/* Folders panel — uses Primer (GitHub) variables to follow the site's light/dark theme. */
 #grf-panel, #grf-readme-dialog {
   --grf-bg: var(--bgColor-default, #ffffff);
   --grf-bg-muted: var(--bgColor-muted, #f6f8fa);
@@ -28,7 +28,7 @@
 .grf-icon { display: inline-flex; width: 16px; height: 16px; flex: none; }
 .grf-icon svg { width: 100%; height: 100%; }
 
-/* ---------- Cabeçalho ---------- */
+/* ---------- Header ---------- */
 
 .grf-header {
   display: flex;
@@ -50,7 +50,7 @@
   height: 36px;
   border-radius: 10px;
   color: #fff;
-  background: #1f2328; /* igual ao ícone da extensão */
+  background: #1f2328; /* matches the extension icon */
   box-shadow: 0 0 0 1px var(--grf-border);
 }
 .grf-title-icon .grf-icon { width: 18px; height: 18px; }
@@ -115,7 +115,7 @@
 }
 .grf-status.grf-error { color: var(--grf-danger); }
 
-/* ---------- Pastas ---------- */
+/* ---------- Folders ---------- */
 
 .grf-folders { display: grid; gap: 10px; padding: 14px; min-height: 40px; transition: background .15s; }
 #grf-panel.grf-is-dragging .grf-folders { background: var(--grf-bg-inset); }
@@ -220,7 +220,7 @@
 .grf-icon-btn:hover { background: var(--grf-bg-muted); color: var(--grf-fg); }
 .grf-icon-btn.grf-danger:hover { color: var(--grf-danger); background: color-mix(in srgb, var(--grf-danger) 10%, transparent); }
 
-/* Distribuição de linguagens da pasta */
+/* Folder language breakdown */
 .grf-langbar { display: flex; gap: 1px; height: 3px; background: var(--grf-border-muted); }
 .grf-langbar i { display: block; min-width: 4px; }
 
@@ -258,12 +258,12 @@
 .grf-folders.grf-drop { box-shadow: inset 0 0 0 2px var(--grf-accent); }
 .grf-dragging { opacity: .45; }
 
-/* ---------- Repositórios ---------- */
+/* ---------- Repositories ---------- */
 
 .grf-repos { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--grf-border-muted); }
 .grf-repo {
   display: grid;
-  grid-template-columns: var(--grf-cols, minmax(0, 1fr) 30px); /* definido pelas colunas escolhidas */
+  grid-template-columns: var(--grf-cols, minmax(0, 1fr) 30px); /* set by the chosen columns */
   align-items: center;
   gap: 12px;
   padding: 10px 12px 10px 16px;
@@ -343,7 +343,7 @@
 }
 @keyframes grf-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
-/* Menu "mover": um <select> invisível por cima do botão. */
+/* "Move" menu: an invisible <select> over the button. */
 .grf-move {
   position: relative;
   display: inline-grid;
@@ -366,7 +366,7 @@
   cursor: pointer;
 }
 
-/* ---------- Estado vazio ---------- */
+/* ---------- Empty state ---------- */
 
 .grf-empty {
   display: grid;
@@ -389,7 +389,7 @@
 }
 .grf-empty-icon .grf-icon { width: 22px; height: 22px; }
 
-/* ---------- Lista nativa do GitHub ---------- */
+/* ---------- GitHub's native list ---------- */
 
 #user-repositories-list li[data-grf] { cursor: grab; }
 .grf-item-bar { display: inline-flex; vertical-align: middle; margin-left: 8px; }
@@ -409,7 +409,7 @@
 .grf-move.grf-move-labeled .grf-icon { width: 13px; height: 13px; }
 #user-repositories-list li:hover .grf-move-labeled { opacity: 1; }
 
-/* ---------- Ecrãs estreitos: metadados passam para uma segunda linha ---------- */
+/* ---------- Narrow screens: metadata moves to a second line ---------- */
 
 @media (max-width: 900px) {
   .grf-repo { display: flex; flex-wrap: wrap; row-gap: 6px; column-gap: 14px; }
@@ -423,7 +423,7 @@
   .grf-actions, .grf-move { opacity: 1; }
 }
 
-/* ---------- Janela do README ---------- */
+/* ---------- README dialog ---------- */
 
 #grf-readme-dialog {
   width: min(860px, calc(100vw - 32px));
@@ -518,9 +518,9 @@
 #grf-readme-dialog a.grf-btn { text-decoration: none; }
 .grf-btn[disabled] { opacity: .5; cursor: not-allowed; }
 
-/* ---------- Colunas extra ---------- */
+/* ---------- Extra columns ---------- */
 
-/* Muitas colunas: nome + menu na 1.ª linha; os dados seguem por baixo e quebram linha se não couberem */
+/* Many columns: name + menu on line 1; data goes below and wraps if it doesn't fit */
 #grf-panel.grf-wide .grf-repo { display: flex; flex-wrap: wrap; column-gap: 14px; row-gap: 8px; }
 #grf-panel.grf-wide .grf-repo-main { flex: 1 0 calc(100% - 50px); order: -2; }
 #grf-panel.grf-wide .grf-repo .grf-move { order: -1; margin-left: auto; }
@@ -543,7 +543,7 @@
 .grf-homepage { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--grf-fg-muted) !important; }
 .grf-homepage:hover { background: var(--grf-border-muted); color: var(--grf-accent) !important; }
 
-/* Menu "Colunas" */
+/* "Columns" menu */
 .grf-menu-wrap { position: relative; }
 .grf-menu {
   position: absolute;
@@ -592,7 +592,7 @@
   cursor: pointer;
 }
 
-/* Colunas do README */
+/* README columns */
 .grf-dialog-columns { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 18px 10px; font-size: 12px; }
 .grf-chip-toggle {
   display: inline-flex;

@@ -1,9 +1,9 @@
-// Partilhado pela página do GitHub (content.js) e pelo painel lateral.
-// A conta é a que tem sessão iniciada no github.com (não há token nem utilizador para configurar)
-// e cada conta tem os seus dados: as chaves levam o login, ex.: "folders@octocat".
-// Os repositórios são lidos das páginas do GitHub com a sessão, por isso incluem os privados.
-// As pastas também vão para chrome.storage.sync: acompanham a conta Google do Chrome e aparecem
-// já organizadas noutros computadores. O resto (cache dos repositórios) é grande e fica só local.
+// Shared by the GitHub page (content.js) and the side panel.
+// The account is whichever is signed in on github.com (no token or username to configure)
+// and each account has its own data: keys carry the login, e.g. "folders@octocat".
+// Repositories are read from GitHub's pages with the session, so private ones are included.
+// Folders also go to chrome.storage.sync: they follow the Chrome Google account and show up
+// already organized on other computers. The rest (repository cache) is large and stays local.
 const GITHUB = 'https://github.com';
 
 const Session = {
@@ -13,7 +13,7 @@ const Session = {
     return `${name}@${login.toLowerCase()}`;
   },
 
-  // { folders, repos, … } da conta, mais as chaves globais pedidas em extraKeys.
+  // { folders, repos, … } for the account, plus the global keys requested in extraKeys.
   async load(login, extraKeys = []) {
     const keys = this.ACCOUNT_KEYS.map((n) => this.key(login, n));
     const d = await chrome.storage.local.get([...keys, ...extraKeys]);
@@ -21,18 +21,18 @@ const Session = {
     this.ACCOUNT_KEYS.forEach((n, i) => { out[n] = d[keys[i]]; });
     const synced = await this.loadSyncedFolders(login);
     if (synced) out.folders = synced;
-    else if (out.folders?.length) this.saveSyncedFolders(login, out.folders); // primeira vez: envia as pastas locais
+    else if (out.folders?.length) this.saveSyncedFolders(login, out.folders); // first time: upload the local folders
     return out;
   },
 
-  // Grava em local (rápido e sem limites) e, no caso das pastas, também no sync.
+  // Saves locally (fast, no limits) and, for folders, to sync as well.
   save(login, patch) {
     const local = chrome.storage.local.set(Object.fromEntries(Object.entries(patch).map(([n, v]) => [this.key(login, n), v])));
     return Promise.all([local, patch.folders && this.saveSyncedFolders(login, patch.folders)]);
   },
 
-  // As alterações tocam nesta conta? No 'sync' ignora o eco das gravações feitas aqui:
-  // podia chegar depois de uma alteração mais recente e repor pastas antigas.
+  // Do the changes affect this account? For 'sync', ignore echoes of writes made here:
+  // one could arrive after a newer change and bring back old folders.
   changed(login, changes, area = 'local') {
     if (area === 'sync') {
       const head = changes[this.key(login, 'folders')]?.newValue;
@@ -41,12 +41,12 @@ const Session = {
     return this.ACCOUNT_KEYS.some((n) => this.key(login, n) in changes);
   },
 
-  // ---------- Pastas no chrome.storage.sync ----------
-  // O sync aceita no máximo 8 KB por item, por isso o JSON vai em pedaços:
-  //   "folders@login" = { chunks, savedAt } e "folders@login#0", "#1", … = texto.
-  // 3000 caracteres cabem num item mesmo com acentos e aspas escapadas.
+  // ---------- Folders in chrome.storage.sync ----------
+  // Sync allows at most 8 KB per item, so the JSON is split into chunks:
+  //   "folders@login" = { chunks, savedAt } and "folders@login#0", "#1", … = text.
+  // 3000 characters fit in one item even with accents and escaped quotes.
   CHUNK: 3000,
-  ownWrites: new Set(), // savedAt das gravações feitas neste contexto
+  ownWrites: new Set(), // savedAt of writes made in this context
 
   async loadSyncedFolders(login) {
     const key = this.key(login, 'folders');
@@ -57,7 +57,7 @@ const Session = {
       const parts = await chrome.storage.sync.get(keys);
       return JSON.parse(keys.map((k) => parts[k]).join(''));
     } catch {
-      return null; // sync indisponível ou a meio de uma atualização: fica a cópia local
+      return null; // sync unavailable or mid-update: use the local copy
     }
   },
 
@@ -65,7 +65,7 @@ const Session = {
     const key = this.key(login, 'folders');
     const json = JSON.stringify(folders);
     const chunks = Math.max(1, Math.ceil(json.length / this.CHUNK));
-    const savedAt = Date.now() + Math.random(); // único, para reconhecer o eco
+    const savedAt = Date.now() + Math.random(); // unique, to recognize the echo
     this.ownWrites.add(savedAt);
     const items = { [key]: { chunks, savedAt } };
     for (let i = 0; i < chunks; i++) items[`${key}#${i}`] = json.slice(i * this.CHUNK, (i + 1) * this.CHUNK);
@@ -76,11 +76,11 @@ const Session = {
         await chrome.storage.sync.remove(Array.from({ length: old.chunks - chunks }, (_, i) => `${key}#${chunks + i}`));
       }
     } catch (err) {
-      console.warn('GitHub Repo Folders: não foi possível sincronizar as pastas', err); // ficam em local
+      console.warn('GitHub Repo Folders: could not sync folders', err); // they stay local
     }
   },
 
-  // Regista a conta ativa. Na primeira vez, os dados antigos (anteriores às contas) passam para ela.
+  // Records the active account. The first time, legacy (pre-account) data moves to it.
   async setAccount(login) {
     const legacy = await chrome.storage.local.get(['account', 'settings', ...this.ACCOUNT_KEYS]);
     if (login && this.ACCOUNT_KEYS.some((n) => n in legacy)) {
@@ -92,11 +92,11 @@ const Session = {
       await chrome.storage.local.set(patch);
       await chrome.storage.local.remove(this.ACCOUNT_KEYS);
     }
-    if ('settings' in legacy) await chrome.storage.local.remove('settings'); // utilizador/token de versões antigas
+    if ('settings' in legacy) await chrome.storage.local.remove('settings'); // username/token from older versions
     if (legacy.account !== login) await chrome.storage.local.set({ account: login });
   },
 
-  // ---------- Leitura das páginas do GitHub ----------
+  // ---------- Reading GitHub's pages ----------
 
   async fetchDoc(path) {
     const res = await fetch(new URL(path, GITHUB), { credentials: 'include', headers: { Accept: 'text/html' } });
@@ -104,7 +104,7 @@ const Session = {
     return new DOMParser().parseFromString(await res.text(), 'text/html');
   },
 
-  // Login com sessão iniciada nesse documento ('' = sem sessão, null = não é uma página normal do GitHub).
+  // Signed-in login in that document ('' = signed out, null = not a regular GitHub page).
   loginIn(doc) {
     const meta = doc.querySelector('meta[name="user-login"]');
     return meta ? meta.content : null;
@@ -121,7 +121,7 @@ const Session = {
     return Math.round(t.endsWith('k') ? n * 1000 : n);
   },
 
-  // Itens da lista github.com/<user>?tab=repositories: [{ li, repo }]
+  // Items of the github.com/<user>?tab=repositories list: [{ li, repo }]
   parseRepoList(root) {
     return [...root.querySelectorAll('#user-repositories-list li[itemprop~="owns"]')].map((li) => {
       const a = li.querySelector('a[itemprop~="codeRepository"]');
@@ -151,7 +151,7 @@ const Session = {
     return doc.querySelector('.paginate-container a[rel="next"], a.next_page')?.getAttribute('href');
   },
 
-  // Percorre todas as páginas da lista de repositórios da conta.
+  // Walks every page of the account's repository list.
   async fetchOwnRepos(login, onProgress = () => {}) {
     const found = [];
     let path = `/${login}?tab=repositories`;
@@ -169,7 +169,7 @@ const Session = {
     'login', 'logout', 'new', 'apps', 'account', 'dashboard', 'copilot', 'github-copilot', 'site', 'about',
     'pricing', 'security', 'customer-stories', 'readme', 'team', 'trending', 'search', 'contact', 'blog', 'watching', 'stars']),
 
-  // Repositórios de outras pessoas/organizações onde a conta colabora (github.com/settings/repositories).
+  // Repositories of other people/organizations the account collaborates on (github.com/settings/repositories).
   async fetchCollabRepos(login) {
     const doc = await this.fetchDoc('/settings/repositories');
     const root = doc.querySelector('main') || doc.body;

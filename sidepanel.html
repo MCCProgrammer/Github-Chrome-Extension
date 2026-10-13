@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>GitHub Repo Folders</title>
@@ -15,25 +15,25 @@
     <a id="profileLink" class="avatar-link" target="_blank" rel="noopener" hidden>
       <img id="avatar" class="avatar" alt="">
     </a>
-    <button id="refreshBtn" class="btn-icon" type="button" title="Atualizar repositórios" aria-label="Atualizar repositórios"></button>
-    <button id="settingsBtn" class="btn-icon" type="button" title="Definições" aria-label="Definições"></button>
+    <button id="refreshBtn" class="btn-icon" type="button" title="Refresh repositories" aria-label="Refresh repositories"></button>
+    <button id="settingsBtn" class="btn-icon" type="button" title="Settings" aria-label="Settings"></button>
   </header>
 
   <section id="settings" class="settings" hidden>
     <div class="box">
-      <div class="box-header">Conta</div>
+      <div class="box-header">Account</div>
       <div class="box-body">
         <div class="account">
           <img id="accountAvatar" class="avatar avatar-lg" alt="">
           <div class="account-info">
             <strong id="accountLogin"></strong>
-            <span class="field-hint">Detetada automaticamente a partir da sessão iniciada no GitHub.
-              Para usar outra conta, troca de conta no GitHub: cada conta tem as suas pastas.</span>
+            <span class="field-hint">Detected automatically from your GitHub session.
+              To use another account, switch accounts on GitHub: each account has its own folders.</span>
           </div>
         </div>
         <div class="actions">
-          <button id="exportBtn" class="btn" type="button">Exportar pastas</button>
-          <button id="importBtn" class="btn" type="button">Importar pastas</button>
+          <button id="exportBtn" class="btn" type="button">Export folders</button>
+          <button id="importBtn" class="btn" type="button">Import folders</button>
           <input id="importFile" type="file" accept="application/json" hidden>
         </div>
       </div>
@@ -43,16 +43,16 @@
   <div id="toolbar" class="toolbar">
     <label class="search">
       <span id="searchIcon"></span>
-      <input id="searchInput" type="search" placeholder="Procurar repositórios…" autocomplete="off">
+      <input id="searchInput" type="search" placeholder="Search repositories…" autocomplete="off">
     </label>
-    <button id="newFolderBtn" class="btn btn-primary" type="button" title="Nova pasta"></button>
+    <button id="newFolderBtn" class="btn btn-primary" type="button" title="New folder"></button>
   </div>
 
   <div id="status" class="flash" hidden></div>
   <main id="folders"></main>
 
   <footer id="footer" class="app-footer">
-    <a id="openRepos" target="_blank" rel="noopener">Abrir os meus repositórios no GitHub ↗</a>
+    <a id="openRepos" target="_blank" rel="noopener">Open my repositories on GitHub ↗</a>
   </footer>
 
   <script src="folders-core.js"></script>

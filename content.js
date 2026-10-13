@@ -1,8 +1,8 @@
-// Injeta o painel de pastas na página github.com/<user>?tab=repositories, só no perfil
-// da conta com sessão iniciada. Os repositórios são lidos da própria página (scraping) e
-// partilham o armazenamento da conta com o painel lateral (ver github-session.js).
+// Injects the folders panel into github.com/<user>?tab=repositories, only on the profile
+// of the signed-in account. Repositories are scraped from the page itself and share the
+// account's storage with the side panel (see github-session.js).
 const UNSORTED = '__unsorted__';
-const META_TTL = 12 * 60 * 60 * 1000; // contribuidores são revalidados a cada 12h
+const META_TTL = 12 * 60 * 60 * 1000; // contributors are refreshed every 12h
 const META_CONCURRENCY = 4;
 const FOLDER_COLORS = ['#4493f8', '#3fb950', '#a371f7', '#f0883e', '#db61a2', '#d29922', '#39c5cf', '#f85149'];
 
@@ -14,22 +14,22 @@ const LANGUAGE_COLORS = {
   'Objective-C': '#438eff', R: '#198CE7', Assembly: '#6E4C13', Dockerfile: '#384d54', MDX: '#fcb32c',
 };
 
-// Colunas que se podem mostrar em cada repositório dentro das pastas.
-// field: campo do repositório (vem da lista do perfil ou da API); source: pedido próprio.
-// api: true = só existe na API pública do GitHub (60 pedidos/hora).
+// Columns that can be shown for each repository inside the folders.
+// field: repository field (from the profile list or the API); source: its own request.
+// api: true = only available from GitHub's public API (60 requests/hour).
 const PANEL_COLUMNS = [
-  { id: 'description', label: 'Descrição', icon: 'file', field: 'description', inline: true },
-  { id: 'language', label: 'Linguagem', icon: 'code', width: '130px', field: 'language' },
-  { id: 'contributors', label: 'Contribuidores', icon: 'users', width: '110px', source: 'contributors' },
-  { id: 'activity', label: 'Atividade (último ano)', icon: 'activity', width: '100px', source: 'activity' },
-  { id: 'updated', label: 'Última atualização', icon: 'clock', width: '140px', field: 'updatedAt' },
-  { id: 'created', label: 'Data de criação', icon: 'calendar', width: '120px', field: 'createdAt', api: true },
-  { id: 'stars', label: 'Estrelas', icon: 'star', width: '60px', field: 'stars' },
+  { id: 'description', label: 'Description', icon: 'file', field: 'description', inline: true },
+  { id: 'language', label: 'Language', icon: 'code', width: '130px', field: 'language' },
+  { id: 'contributors', label: 'Contributors', icon: 'users', width: '110px', source: 'contributors' },
+  { id: 'activity', label: 'Activity (last year)', icon: 'activity', width: '100px', source: 'activity' },
+  { id: 'updated', label: 'Last updated', icon: 'clock', width: '140px', field: 'updatedAt' },
+  { id: 'created', label: 'Created', icon: 'calendar', width: '120px', field: 'createdAt', api: true },
+  { id: 'stars', label: 'Stars', icon: 'star', width: '60px', field: 'stars' },
   { id: 'forks', label: 'Forks', icon: 'fork', width: '60px', field: 'forks' },
-  { id: 'issues', label: 'Issues e PRs abertos', icon: 'issue', width: '60px', field: 'openIssues', api: true },
-  { id: 'license', label: 'Licença', icon: 'law', width: '100px', field: 'license' },
-  { id: 'topics', label: 'Tópicos', icon: 'tag', width: '170px', field: 'topics' },
-  { id: 'size', label: 'Tamanho', icon: 'database', width: '80px', field: 'size', api: true },
+  { id: 'issues', label: 'Open issues and PRs', icon: 'issue', width: '60px', field: 'openIssues', api: true },
+  { id: 'license', label: 'License', icon: 'law', width: '100px', field: 'license' },
+  { id: 'topics', label: 'Topics', icon: 'tag', width: '170px', field: 'topics' },
+  { id: 'size', label: 'Size', icon: 'database', width: '80px', field: 'size', api: true },
   { id: 'homepage', label: 'Website', icon: 'link', width: '32px', field: 'homepage', api: true },
 ];
 const COLUMN_BY_ID = Object.fromEntries(PANEL_COLUMNS.map((c) => [c.id, c]));
@@ -39,7 +39,7 @@ const state = { login: '', folders: [], repos: [], collab: [], collabCollapsed: 
 let syncing = false;
 let loadingCollab = false;
 
-// ---------- Ícones (SVG inline, estilo traço) ----------
+// ---------- Icons (inline SVG, stroke style) ----------
 
 const ICONS = {
   chevron: '<polyline points="9 18 15 12 9 6"/>',
@@ -79,7 +79,7 @@ function icon(name, className = '') {
   return span;
 }
 
-// ---------- Armazenamento ----------
+// ---------- Storage ----------
 
 async function load() {
   state.login = loggedInUser();
@@ -89,7 +89,7 @@ async function load() {
   state.repos = d.repos || [];
   state.collab = d.collabRepos || [];
   state.collabCollapsed = !!d.collabCollapsed;
-  // O que está em memória é mais recente (a gravação dos metadados é adiada).
+  // What's in memory is newer (saving metadata is debounced).
   state.meta = { ...(d.repoMeta || {}), ...state.meta };
 }
 
@@ -97,7 +97,7 @@ function save() {
   return Session.save(state.login, { folders: state.folders, collabCollapsed: state.collabCollapsed });
 }
 
-// Junta sem apagar campos já conhecidos (ex.: a API sabe a linguagem, a página não).
+// Merge without dropping known fields (e.g. the API knows the language, the page may not).
 function mergeRepos(found) {
   const byName = new Map(state.repos.map((r) => [r.fullName.toLowerCase(), r]));
   for (const r of found) {
@@ -114,7 +114,7 @@ function findRepo(fullName) {
   return state.repos.find((r) => r.fullName.toLowerCase() === n);
 }
 
-// ---------- Leitura da lista ----------
+// ---------- Reading the list ----------
 
 function profileOwner() {
   return location.pathname.split('/')[1];
@@ -129,26 +129,26 @@ function isOwnProfile() {
   return !!me && me === profileOwner().toLowerCase();
 }
 
-// Percorre todas as páginas da lista (?page=N) e guarda os repositórios.
+// Walks every page of the list (?page=N) and stores the repositories.
 async function syncAllPages() {
   if (syncing) return;
   syncing = true;
-  setStatus('A ler todas as páginas…');
+  setStatus('Reading all pages…');
   try {
-    const found = await Session.fetchOwnRepos(state.login, (n) => setStatus(`A ler todas as páginas… ${n} repositórios`));
+    const found = await Session.fetchOwnRepos(state.login, (n) => setStatus(`Reading all pages… ${n} repositories`));
     await mergeRepos(found);
-    setStatus(`${found.length} repositórios sincronizados.`);
+    setStatus(`${found.length} repositories synced.`);
     setTimeout(() => setStatus(''), 2500);
   } catch (err) {
-    setStatus(`Falhou a sincronização: ${err.message}`, true);
+    setStatus(`Sync failed: ${err.message}`, true);
   } finally {
     syncing = false;
   }
 }
 
-// ---------- Repositórios onde és colaborador ----------
-// A página do perfil só mostra os repositórios de que és dono; os de colaboração
-// vêm de github.com/settings/repositories.
+// ---------- Repositories you collaborate on ----------
+// The profile page only lists repositories you own; collaborations come from
+// github.com/settings/repositories.
 
 async function refreshCollaborations() {
   if (loadingCollab) return;
@@ -160,16 +160,16 @@ async function refreshCollaborations() {
     await Session.save(state.login, { collabRepos: state.collab });
     scheduleRender();
   } catch (err) {
-    setStatus(`Não consegui obter as colaborações (${err.message}).`, true);
+    setStatus(`Couldn't load collaborations (${err.message}).`, true);
   } finally {
     loadingCollab = false;
   }
 }
 
-// ---------- Metadados (carregados só para as colunas visíveis) ----------
-// contributors: fragmento HTML da barra lateral do repositório (usa a sessão, funciona em privados)
-// activity:     gráfico de commits do último ano (/graphs/participation, também com a sessão)
-// info:         API do GitHub via background (data de criação, issues, tamanho, website…)
+// ---------- Metadata (loaded only for visible columns) ----------
+// contributors: HTML fragment from the repo sidebar (uses the session, works for private repos)
+// activity:     last year's commit graph (/graphs/participation, also with the session)
+// info:         GitHub API via the background worker (created date, issues, size, website…)
 
 const DATA_CONCURRENCY = 4;
 const dataTasks = new Map();
@@ -193,7 +193,7 @@ function updateMeta(fullName, patch) {
   scheduleRender();
 }
 
-// Corre fn uma única vez por chave, com no máximo DATA_CONCURRENCY pedidos em simultâneo.
+// Runs fn once per key, with at most DATA_CONCURRENCY requests in flight.
 function runTask(key, fn) {
   if (dataTasks.has(key)) return dataTasks.get(key);
   const promise = new Promise((resolve) => {
@@ -235,14 +235,14 @@ async function fetchContributors(fullName) {
   };
 }
 
-// Alturas (0–28) das ~52 semanas do gráfico de participação do GitHub.
+// Heights (0–28) of the ~52 weeks in GitHub's participation graph.
 async function fetchActivity(fullName) {
   const doc = await fetchFragment(`/${fullName}/graphs/participation?h=28&type=sparkline&w=155`);
   const points = doc.querySelector('polyline')?.getAttribute('points') || '';
   return points.trim().split(/\s+/).map((p) => Number(p.split(',')[1])).filter((n) => !Number.isNaN(n));
 }
 
-// Cada tipo de dado grava um carimbo de tempo, mesmo quando falha, para não repetir pedidos.
+// Each data kind stores a timestamp, even on failure, so requests aren't repeated.
 const FETCHERS = {
   contributors: { stamp: 'fetchedAt', run: async (n) => updateMeta(n, await fetchContributors(n)) },
   activity: { stamp: 'activityAt', run: async (n) => updateMeta(n, { activity: await fetchActivity(n) }) },
@@ -262,17 +262,17 @@ function ensureData(fullName, kind) {
     try {
       await fetcher.run(fullName);
     } catch {
-      // sem acesso, repo vazio ou limite da API — a coluna mostra "—"
+      // no access, empty repo or API limit — the column shows "—"
     } finally {
       updateMeta(fullName, { [fetcher.stamp]: Date.now() });
     }
   });
 }
 
-// Pede só o que as colunas indicadas precisam e ainda não se sabe.
+// Requests only what the given columns need and isn't known yet.
 function ensureRepoData(fullName, columnIds) {
   const repo = findRepo(fullName);
-  const kinds = new Set(repo?.updatedAt ? [] : ['info']); // colaborações: nem a data se sabe
+  const kinds = new Set(repo?.updatedAt ? [] : ['info']); // collaborations: not even the date is known
   for (const id of columnIds) {
     const col = COLUMN_BY_ID[id];
     if (col?.source) kinds.add(col.source);
@@ -281,7 +281,7 @@ function ensureRepoData(fullName, columnIds) {
   return Promise.all([...kinds].map((k) => ensureData(fullName, k)));
 }
 
-// ---------- Pastas ----------
+// ---------- Folders ----------
 
 function folderOf(fullName) {
   const n = fullName.toLowerCase();
@@ -305,7 +305,7 @@ function moveRepo(fullName, folderId) {
 function createFolder(parentId = null) {
   const folder = {
     id: crypto.randomUUID(),
-    name: parentId ? 'Nova subpasta' : 'Nova pasta',
+    name: parentId ? 'New subfolder' : 'New folder',
     collapsed: false,
     repos: [],
     parentId,
@@ -345,7 +345,7 @@ function startRename(id) {
   const nameEl = document.querySelector(`#grf-panel .grf-folder[data-id="${id}"] > .grf-folder-head .grf-folder-name`);
   if (!folder || !nameEl) return;
   const head = nameEl.closest('.grf-folder-head');
-  head.draggable = false; // senão o input não deixa selecionar texto
+  head.draggable = false; // otherwise the input can't select text
   const input = el('input', { className: 'grf-rename', value: folder.name });
   nameEl.replaceWith(input);
   input.focus();
@@ -355,7 +355,7 @@ function startRename(id) {
     if (done) return;
     done = true;
     if (commit && input.value.trim()) folder.name = input.value.trim();
-    input.remove(); // tem de sair antes do render, que ignora pedidos durante a edição
+    input.remove(); // must go before render, which is skipped while editing
     save();
     render();
   };
@@ -366,7 +366,7 @@ function startRename(id) {
   input.addEventListener('blur', () => finish(true));
 }
 
-// ---------- Utilitários de UI ----------
+// ---------- UI helpers ----------
 
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
@@ -391,7 +391,7 @@ function setStatus(text, isError = false) {
   s.classList.toggle('grf-error', isError);
 }
 
-const rtf = new Intl.RelativeTimeFormat('pt', { numeric: 'auto' });
+const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const TIME_UNITS = [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]];
 
 function timeAgo(iso) {
@@ -399,7 +399,7 @@ function timeAgo(iso) {
   for (const [unit, size] of TIME_UNITS) {
     if (Math.abs(secs) >= size) return rtf.format(Math.round(secs / size), unit);
   }
-  return 'agora mesmo';
+  return 'just now';
 }
 
 function languageColor(repo) {
@@ -412,17 +412,17 @@ function matches(fullName) {
   return `${fullName} ${repo?.description || ''} ${repo?.language || ''}`.toLowerCase().includes(state.query);
 }
 
-// Um <select> nativo invisível por cima de um botão: acessível e sem dropdown próprio.
+// An invisible native <select> over a button: accessible, no custom dropdown.
 function moveSelect(fullName, currentId, label) {
-  const select = el('select', { className: 'grf-move-select', title: 'Mover para pasta' });
-  select.append(new Option('Mover para…', '', true, true));
+  const select = el('select', { className: 'grf-move-select', title: 'Move to folder' });
+  select.append(new Option('Move to…', '', true, true));
   select.options[0].disabled = true;
   for (const { folder, depth } of FolderTree.flatten(state.folders)) {
     const opt = new Option(FolderTree.optionLabel(folder, depth), folder.id);
     opt.disabled = folder.id === currentId;
     select.append(opt);
   }
-  if (currentId !== UNSORTED) select.append(new Option('— Tirar da pasta —', UNSORTED));
+  if (currentId !== UNSORTED) select.append(new Option('— Remove from folder —', UNSORTED));
   select.addEventListener('change', () => moveRepo(fullName, select.value));
   select.addEventListener('mousedown', (e) => e.stopPropagation());
   return el('span', { className: `grf-move${label ? ' grf-move-labeled' : ''}` },
@@ -444,14 +444,14 @@ function makeDraggable(node, value, type = 'text/x-repo') {
   });
 }
 
-// Aceita repositórios (move-os para a pasta) e pastas (passam a subpasta).
-// folderId UNSORTED = topo do painel: repos ficam sem pasta, pastas passam a topo.
+// Accepts repositories (moved into the folder) and folders (become subfolders).
+// folderId UNSORTED = panel root: repos leave their folder, folders become top-level.
 function makeDropTarget(node, folderId) {
   const accepts = (e) => e.dataTransfer.types.includes('text/x-repo') || e.dataTransfer.types.includes('text/x-folder');
   node.addEventListener('dragover', (e) => {
     if (!accepts(e)) return;
     e.preventDefault();
-    e.stopPropagation(); // só a pasta mais interior fica realçada
+    e.stopPropagation(); // only the innermost folder is highlighted
     document.querySelectorAll('.grf-drop').forEach((n) => n !== node && n.classList.remove('grf-drop'));
     node.classList.add('grf-drop');
   });
@@ -471,9 +471,9 @@ function makeDropTarget(node, folderId) {
   });
 }
 
-// ---------- Renderização ----------
+// ---------- Rendering ----------
 
-const dateFormat = new Intl.DateTimeFormat('pt-PT', { day: 'numeric', month: 'short', year: 'numeric' });
+const dateFormat = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 
 function formatSize(kb) {
   if (kb < 1024) return `${kb} KB`;
@@ -503,7 +503,7 @@ function sparkline(values, color) {
   return svg;
 }
 
-// Conteúdo de cada coluna. Devolve null quando o dado não existe (mostra "—").
+// Content of each column. Returns null when there's no data (shows "—").
 const CELL_RENDERERS = {
   language: (repo) => {
     if (!repo.language) return null;
@@ -518,7 +518,7 @@ const CELL_RENDERERS = {
     return [stack, el('span', { textContent: meta.contributors })];
   },
   activity: (repo, meta, color) => (meta?.activity?.length ? [sparkline(meta.activity, color)] : null),
-  updated: (repo) => (repo.updatedAt ? [icon('clock'), el('span', { textContent: timeAgo(repo.updatedAt), title: new Date(repo.updatedAt).toLocaleString('pt-PT') })] : null),
+  updated: (repo) => (repo.updatedAt ? [icon('clock'), el('span', { textContent: timeAgo(repo.updatedAt), title: new Date(repo.updatedAt).toLocaleString('en-US') })] : null),
   created: (repo) => (repo.createdAt ? [icon('calendar'), el('span', { textContent: dateFormat.format(new Date(repo.createdAt)) })] : null),
   stars: (repo) => [icon('star'), el('span', { textContent: repo.stars })],
   forks: (repo) => [icon('fork'), el('span', { textContent: repo.forks })],
@@ -536,7 +536,7 @@ const CELL_RENDERERS = {
   },
 };
 
-// Ainda à espera do pedido que traz este dado?
+// Still waiting for the request that brings this data?
 function isLoading(col, repo, meta) {
   if (col.source === 'contributors') return !meta?.fetchedAt;
   if (col.source === 'activity') return !meta?.activityAt;
@@ -566,7 +566,7 @@ function renderRepoRow(fullName, folderId, color) {
 
   const cells = visibleColumns().map((col) => {
     const cell = el('span', { className: `grf-meta grf-meta-${col.id}`, title: col.label });
-    cell.style.flexBasis = col.width; // usado quando a linha passa a flex (muitas colunas / ecrã estreito)
+    cell.style.flexBasis = col.width; // used when the row switches to flex (many columns / narrow screen)
     const content = CELL_RENDERERS[col.id](repo, meta, color);
     if (content) cell.append(...content);
     else if (isLoading(col, repo, meta)) cell.append(el('span', { className: 'grf-skeleton' }));
@@ -579,21 +579,21 @@ function renderRepoRow(fullName, folderId, color) {
   return row;
 }
 
-// Colunas com largura própria (a descrição vai por baixo do nome).
+// Columns with their own width (the description goes under the name).
 function visibleColumns() {
   return PANEL_COLUMNS.filter((c) => !c.inline && state.columns.includes(c.id));
 }
 
 function setColumns(ids) {
-  state.columns = PANEL_COLUMNS.map((c) => c.id).filter((id) => ids.includes(id)); // mantém a ordem do catálogo
+  state.columns = PANEL_COLUMNS.map((c) => c.id).filter((id) => ids.includes(id)); // keep catalog order
   chrome.storage.local.set({ panelColumns: state.columns });
   render();
 }
 
-// Menu "Colunas": liga/desliga cada coluna.
+// "Columns" menu: toggles each column.
 function buildColumnsMenu() {
-  const btn = el('button', { className: 'grf-btn', type: 'button', title: 'Escolher que informação aparece em cada repositório' },
-    icon('columns'), el('span', { textContent: 'Colunas' }));
+  const btn = el('button', { className: 'grf-btn', type: 'button', title: 'Choose what is shown for each repository' },
+    icon('columns'), el('span', { textContent: 'Columns' }));
   const menu = el('div', { className: 'grf-menu', hidden: true });
   const wrap = el('div', { className: 'grf-menu-wrap' }, btn, menu);
 
@@ -604,14 +604,14 @@ function buildColumnsMenu() {
         setColumns(box.checked ? [...state.columns, col.id] : state.columns.filter((id) => id !== col.id));
       });
       return el('label', { className: 'grf-menu-item' }, box, icon(col.icon), el('span', { textContent: col.label }),
-        col.api ? el('span', { className: 'grf-menu-tag', textContent: 'API', title: 'Vem da API pública do GitHub (60 pedidos por hora).' }) : null);
+        col.api ? el('span', { className: 'grf-menu-tag', textContent: 'API', title: 'Comes from GitHub\'s public API (60 requests per hour).' }) : null);
     });
-    const reset = el('button', { className: 'grf-menu-reset', type: 'button', textContent: 'Repor predefinição' });
+    const reset = el('button', { className: 'grf-menu-reset', type: 'button', textContent: 'Reset to default' });
     reset.addEventListener('click', () => {
       setColumns(DEFAULT_COLUMNS);
       fill();
     });
-    menu.replaceChildren(el('div', { className: 'grf-menu-title', textContent: 'Colunas visíveis' }), ...items, reset);
+    menu.replaceChildren(el('div', { className: 'grf-menu-title', textContent: 'Visible columns' }), ...items, reset);
   };
 
   btn.addEventListener('click', (e) => {
@@ -625,7 +625,7 @@ function buildColumnsMenu() {
   return wrap;
 }
 
-// Barra fina com a distribuição de linguagens dentro da pasta.
+// Thin bar with the language breakdown inside the folder.
 function languageBar(repoNames) {
   const counts = new Map();
   for (const n of repoNames) {
@@ -654,7 +654,7 @@ function latestUpdate(repoNames) {
 }
 
 function folderHead({ toggleCollapsed, collapsed, iconNode, nameNode, total, repoNames, actions }) {
-  const chevron = el('button', { className: `grf-chevron${collapsed ? '' : ' grf-open'}`, type: 'button', title: 'Expandir/recolher' }, icon('chevron'));
+  const chevron = el('button', { className: `grf-chevron${collapsed ? '' : ' grf-open'}`, type: 'button', title: 'Expand/collapse' }, icon('chevron'));
   chevron.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleCollapsed();
@@ -662,7 +662,7 @@ function folderHead({ toggleCollapsed, collapsed, iconNode, nameNode, total, rep
   const latest = latestUpdate(repoNames);
   const summary = el('span', { className: 'grf-folder-summary' },
     el('span', { className: 'grf-count', textContent: `${total} repo${total === 1 ? '' : 's'}` }),
-    latest ? el('span', { className: 'grf-folder-updated', textContent: `atualizado ${timeAgo(latest)}` }) : null);
+    latest ? el('span', { className: 'grf-folder-updated', textContent: `updated ${timeAgo(latest)}` }) : null);
   const head = el('div', { className: 'grf-folder-head' }, chevron, iconNode, nameNode, summary,
     actions ? el('span', { className: 'grf-actions' }, ...actions) : null);
   head.addEventListener('click', (e) => {
@@ -678,12 +678,12 @@ function renderFolder(folder) {
   if (searching && !allNames.some(matches)) return null;
   const collapsed = folder.collapsed && !searching;
 
-  const folderIcon = el('button', { className: 'grf-folder-icon', type: 'button', title: 'Mudar cor' }, icon('folder'));
+  const folderIcon = el('button', { className: 'grf-folder-icon', type: 'button', title: 'Change color' }, icon('folder'));
   folderIcon.addEventListener('click', (e) => {
     e.stopPropagation();
     cycleColor(folder);
   });
-  const name = el('span', { className: 'grf-folder-name', textContent: folder.name, title: 'Duplo clique para mudar o nome' });
+  const name = el('span', { className: 'grf-folder-name', textContent: folder.name, title: 'Double-click to rename' });
   name.addEventListener('dblclick', () => startRename(folder.id));
 
   const head = folderHead({
@@ -698,10 +698,10 @@ function renderFolder(folder) {
     total: allNames.length,
     repoNames: allNames,
     actions: [
-      iconButton('folderPlus', 'Nova subpasta', () => createFolder(folder.id)),
-      iconButton('edit', 'Mudar nome', () => startRename(folder.id)),
-      iconButton('droplet', 'Mudar cor', () => cycleColor(folder)),
-      iconButton('trash', 'Apagar pasta (o conteúdo sobe para a pasta-mãe)', () => deleteFolder(folder.id), 'grf-danger'),
+      iconButton('folderPlus', 'New subfolder', () => createFolder(folder.id)),
+      iconButton('edit', 'Rename', () => startRename(folder.id)),
+      iconButton('droplet', 'Change color', () => cycleColor(folder)),
+      iconButton('trash', 'Delete folder (contents move up to the parent folder)', () => deleteFolder(folder.id), 'grf-danger'),
     ],
   });
   makeDraggable(head, folder.id, 'text/x-folder');
@@ -713,7 +713,7 @@ function renderFolder(folder) {
     const visible = folder.repos.filter(matches);
     if (visible.length) body.append(el('ul', { className: 'grf-repos' }, ...visible.map((n) => renderRepoRow(n, folder.id, folderColor(folder)))));
     if (folder.repos.length === 0 && subfolders.length === 0) {
-      body.append(el('div', { className: 'grf-dropzone', textContent: 'Arrasta repositórios ou pastas para aqui' }));
+      body.append(el('div', { className: 'grf-dropzone', textContent: 'Drag repositories or folders here' }));
     }
   }
 
@@ -724,7 +724,7 @@ function renderFolder(folder) {
   return node;
 }
 
-// Secção com as colaborações que ainda não estão em nenhuma pasta.
+// Section with collaborations that aren't in any folder yet.
 function renderCollab() {
   const pending = state.collab.filter((n) => !folderOf(n));
   const visible = pending.filter(matches);
@@ -738,7 +738,7 @@ function renderCollab() {
     },
     collapsed,
     iconNode: el('span', { className: 'grf-folder-icon' }, icon('users')),
-    nameNode: el('span', { className: 'grf-folder-name', textContent: 'Colaborações sem pasta' }),
+    nameNode: el('span', { className: 'grf-folder-name', textContent: 'Unsorted collaborations' }),
     total: pending.length,
     repoNames: pending,
   });
@@ -750,24 +750,24 @@ function renderCollab() {
 }
 
 function buildPanel(list) {
-  const search = el('input', { type: 'search', className: 'grf-search-input', placeholder: 'Procurar nas pastas…' });
+  const search = el('input', { type: 'search', className: 'grf-search-input', placeholder: 'Search folders…' });
   search.addEventListener('input', () => {
     state.query = search.value.trim().toLowerCase();
     render();
   });
-  const syncBtn = el('button', { className: 'grf-btn', type: 'button', title: 'Lê todas as páginas da lista, as colaborações e os contribuidores' },
-    icon('refresh'), el('span', { textContent: 'Sincronizar' }));
+  const syncBtn = el('button', { className: 'grf-btn', type: 'button', title: 'Reads every page of the list, your collaborations and contributors' },
+    icon('refresh'), el('span', { textContent: 'Sync' }));
   syncBtn.addEventListener('click', () => {
-    state.meta = {}; // força também a atualização de contribuidores, atividade e dados da API
+    state.meta = {}; // also forces contributors, activity and API data to refresh
     chrome.storage.local.set({ repoMeta: {} });
     syncAllPages();
     refreshCollaborations();
     render();
   });
-  const readmeBtn = el('button', { className: 'grf-btn grf-readme-btn', type: 'button', title: 'Escrever as pastas no README do teu perfil' },
+  const readmeBtn = el('button', { className: 'grf-btn grf-readme-btn', type: 'button', title: 'Write your folders into your profile README' },
     icon('file'), el('span', { textContent: 'README' }));
   readmeBtn.addEventListener('click', openReadmeDialog);
-  const newBtn = el('button', { className: 'grf-btn grf-btn-primary', type: 'button' }, icon('plus'), el('span', { textContent: 'Nova pasta' }));
+  const newBtn = el('button', { className: 'grf-btn grf-btn-primary', type: 'button' }, icon('plus'), el('span', { textContent: 'New folder' }));
   newBtn.addEventListener('click', () => createFolder());
 
   const panel = el('div', { id: 'grf-panel' },
@@ -775,7 +775,7 @@ function buildPanel(list) {
       el('div', { className: 'grf-title' },
         el('span', { className: 'grf-title-icon' }, icon('folder')),
         el('div', {},
-          el('div', { className: 'grf-title-text', textContent: 'Pastas' }),
+          el('div', { className: 'grf-title-text', textContent: 'Folders' }),
           el('div', { className: 'grf-subtitle' }))),
       el('div', { className: 'grf-toolbar' },
         el('label', { className: 'grf-search' }, icon('search'), search),
@@ -795,9 +795,9 @@ function renderPanel() {
   const organized = state.folders.reduce((s, f) => s + f.repos.length, 0);
   const nf = state.folders.length;
   panel.querySelector('.grf-subtitle').textContent =
-    `${nf} pasta${nf === 1 ? '' : 's'} · ${organized} repositório${organized === 1 ? '' : 's'} organizado${organized === 1 ? '' : 's'}`;
+    `${nf} folder${nf === 1 ? '' : 's'} · ${organized} repositor${organized === 1 ? 'y' : 'ies'} organized`;
 
-  // Poucas colunas: tudo numa linha. Muitas: o nome fica em cima e os dados numa segunda linha.
+  // Few columns: one line. Many: name on top and data on a second line.
   const cols = visibleColumns();
   const widths = cols.map((c) => c.width).join(' ');
   const total = cols.reduce((sum, c) => sum + parseInt(c.width, 10), 0);
@@ -814,15 +814,15 @@ function renderPanel() {
   if (nf === 0) {
     container.prepend(el('div', { className: 'grf-empty' },
       el('span', { className: 'grf-empty-icon' }, icon('folderPlus')),
-      el('strong', { textContent: 'Ainda não tens pastas' }),
-      el('span', { textContent: 'Cria uma pasta e arrasta repositórios da lista abaixo para dentro dela.' })));
+      el('strong', { textContent: 'No folders yet' }),
+      el('span', { textContent: 'Create a folder and drag repositories from the list below into it.' })));
   } else if (state.query && !container.children.length) {
-    container.append(el('div', { className: 'grf-empty' }, el('span', { textContent: 'Nada encontrado nas pastas.' })));
+    container.append(el('div', { className: 'grf-empty' }, el('span', { textContent: 'Nothing found in your folders.' })));
   }
 }
 
-// ---------- README do perfil ----------
-// Gera a secção a partir das pastas para copiar e colar no README de <user>/<user>.
+// ---------- Profile README ----------
+// Builds a section from the folders to copy into the README of <user>/<user>.
 
 async function ask(message) {
   const res = await chrome.runtime.sendMessage(message);
@@ -854,10 +854,10 @@ async function openReadmeDialog() {
   const source = el('pre', { className: 'grf-readme-source', hidden: true });
   const note = el('div', { className: 'grf-readme-note' });
   const status = el('span', { className: 'grf-readme-status' });
-  const openRepo = el('a', { className: 'grf-btn', href: `/${owner}/${owner}`, target: '_blank', textContent: 'Abrir repositório do README' });
-  const copy = el('button', { className: 'grf-btn grf-btn-primary', type: 'button' }, icon('copy'), el('span', { textContent: 'Copiar Markdown' }));
+  const openRepo = el('a', { className: 'grf-btn', href: `/${owner}/${owner}`, target: '_blank', textContent: 'Open README repository' });
+  const copy = el('button', { className: 'grf-btn grf-btn-primary', type: 'button' }, icon('copy'), el('span', { textContent: 'Copy Markdown' }));
 
-  const tabPreview = el('button', { className: 'grf-tab grf-tab-active', type: 'button', textContent: 'Pré-visualização' });
+  const tabPreview = el('button', { className: 'grf-tab grf-tab-active', type: 'button', textContent: 'Preview' });
   const tabSource = el('button', { className: 'grf-tab', type: 'button', textContent: 'Markdown' });
   const showTab = (isPreview) => {
     tabPreview.classList.toggle('grf-tab-active', isPreview);
@@ -873,14 +873,14 @@ async function openReadmeDialog() {
     el('div', { className: 'grf-dialog-head' },
       el('span', { className: 'grf-title-icon' }, icon('file')),
       el('div', { className: 'grf-dialog-title' },
-        el('strong', { textContent: 'Secção para o README do perfil' }),
+        el('strong', { textContent: 'Profile README section' }),
         el('span', { textContent: `${owner}/${owner} · README.md` })),
       close),
     el('div', { className: 'grf-dialog-options' },
-      el('label', {}, privateBox, ' Incluir repositórios privados ',
-        el('span', { className: 'grf-faint', textContent: '(quem visita o perfil não os consegue abrir)' })),
+      el('label', {}, privateBox, ' Include private repositories ',
+        el('span', { className: 'grf-faint', textContent: '(visitors to your profile can\'t open them)' })),
       el('span', { className: 'grf-tabs' }, tabPreview, tabSource)),
-    el('div', { className: 'grf-dialog-columns' }, el('span', { className: 'grf-faint', textContent: 'Colunas:' }), ...chips),
+    el('div', { className: 'grf-dialog-columns' }, el('span', { className: 'grf-faint', textContent: 'Columns:' }), ...chips),
     note,
     el('div', { className: 'grf-dialog-body' }, preview, source),
     el('div', { className: 'grf-dialog-foot' }, status, openRepo, copy));
@@ -897,22 +897,22 @@ async function openReadmeDialog() {
   let refreshId = 0;
   const refresh = async () => {
     const id = ++refreshId;
-    // Vai buscar o que falta para as colunas escolhidas (ex.: data de criação vem da API).
+    // Fetch what the chosen columns still need (e.g. created date comes from the API).
     const names = [...new Set(state.folders.flatMap((f) => f.repos))];
     const pending = names.map((n) => ensureRepoData(n, columns));
-    status.textContent = 'A obter dados…';
+    status.textContent = 'Loading data…';
     await Promise.all(pending);
-    if (id !== refreshId) return; // entretanto mudaram as opções
+    if (id !== refreshId) return; // options changed in the meantime
     status.textContent = '';
     section = ProfileReadme.build(state.folders, state.repos, { owner, includePrivate, languageColor, columns, meta: state.meta });
     source.textContent = section;
-    setNote('Copia e cola no README.md do repositório ' + `${owner}/${owner}` +
-      '. Para atualizar mais tarde, substitui tudo o que está entre <!-- REPO-FOLDERS:START --> e <!-- REPO-FOLDERS:END -->.');
+    setNote(`Paste it into README.md in the ${owner}/${owner} repository. To update it later, ` +
+      'replace everything between <!-- REPO-FOLDERS:START --> and <!-- REPO-FOLDERS:END -->.');
 
-    // Pré-visualização com o motor de Markdown do GitHub.
+    // Preview rendered by GitHub's own Markdown engine.
     try {
       const { html } = await ask({ type: 'renderMarkdown', owner, text: section });
-      preview.innerHTML = html; // HTML já sanitizado pela API do GitHub
+      preview.innerHTML = html; // HTML already sanitized by the GitHub API
     } catch {
       showTab(false);
     }
@@ -922,15 +922,15 @@ async function openReadmeDialog() {
     try {
       await navigator.clipboard.writeText(section);
     } catch {
-      // sem permissão para a área de transferência: copia a partir de uma seleção
+      // no clipboard permission: copy from a selection
       const area = el('textarea', { value: section });
       dialog.append(area);
       area.select();
       document.execCommand('copy');
       area.remove();
     }
-    copy.querySelector('span:last-child').textContent = 'Copiado ✓';
-    setTimeout(() => { copy.querySelector('span:last-child').textContent = 'Copiar Markdown'; }, 2000);
+    copy.querySelector('span:last-child').textContent = 'Copied ✓';
+    setTimeout(() => { copy.querySelector('span:last-child').textContent = 'Copy Markdown'; }, 2000);
   });
 
   privateBox.addEventListener('change', () => {
@@ -942,8 +942,8 @@ async function openReadmeDialog() {
   refresh();
 }
 
-// Repositórios que já estão numa pasta só aparecem dentro dela (no painel);
-// os restantes ficam na lista nativa com arrastar + menu de pasta.
+// Repositories already in a folder only appear inside it (in the panel);
+// the rest stay in the native list with drag and a folder menu.
 function decorateList() {
   for (const { li, repo } of Session.parseRepoList(document)) {
     if (!li.dataset.grf) {
@@ -954,14 +954,14 @@ function decorateList() {
     if (li.hidden) continue;
 
     li.querySelector('.grf-item-bar')?.remove();
-    const bar = el('span', { className: 'grf-item-bar' }, moveSelect(repo.fullName, UNSORTED, 'Pasta'));
+    const bar = el('span', { className: 'grf-item-bar' }, moveSelect(repo.fullName, UNSORTED, 'Folder'));
     li.querySelector('h3')?.append(bar);
   }
 }
 
 function render() {
   if (!document.getElementById('user-repositories-list') || !isOwnProfile()) return;
-  if (document.querySelector('#grf-panel .grf-rename')) return; // não interromper a edição de um nome
+  if (document.querySelector('#grf-panel .grf-rename')) return; // don't interrupt a rename
   renderPanel();
   decorateList();
 }
@@ -976,10 +976,10 @@ function scheduleRender() {
   });
 }
 
-// ---------- Arranque ----------
-// O GitHub navega sem recarregar a página (Turbo), por isso observamos o DOM.
+// ---------- Startup ----------
+// GitHub navigates without full reloads (Turbo), so we watch the DOM.
 
-// Avisa o painel lateral de qual é a conta com sessão iniciada (troca de conta = troca de pastas).
+// Tell the side panel which account is signed in (switching accounts switches folders).
 const pageLogin = Session.loginIn(document);
 const accountReady = pageLogin === null ? Promise.resolve() : Session.setAccount(pageLogin);
 
@@ -990,7 +990,7 @@ async function mountIfNeeded() {
   const list = document.getElementById('user-repositories-list');
   if (!list || list === lastListEl) return;
   lastListEl = list;
-  mounted = isOwnProfile(); // só na lista de repositórios da própria conta
+  mounted = isOwnProfile(); // only on the signed-in account's own repository list
   if (!mounted) return;
   await accountReady;
   await load();
@@ -1012,8 +1012,8 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
   scheduleRender();
 });
 
-// A pesquisa "Find a repository" substitui os itens da lista sem trocar o contentor:
-// os itens novos ainda não têm arrastar nem menu de pasta.
+// The "Find a repository" search replaces list items without replacing the container:
+// new items don't have drag or the folder menu yet.
 new MutationObserver(() => {
   mountIfNeeded();
   if (mounted && document.querySelector('#user-repositories-list li[itemprop~="owns"]:not([data-grf])')) scheduleRender();
