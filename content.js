@@ -1052,13 +1052,13 @@ async function openReadmeDialog() {
 // os restantes ficam na lista nativa com arrastar + menu de pasta.
 function decorateList() {
   for (const { li, repo } of scrapeItems(document)) {
-    li.hidden = !!folderOf(repo.fullName);
-    if (li.hidden) continue;
-
     if (!li.dataset.grf) {
       li.dataset.grf = '1';
       makeDraggable(li, repo.fullName);
     }
+    li.hidden = !!folderOf(repo.fullName);
+    if (li.hidden) continue;
+
     li.querySelector('.grf-item-bar')?.remove();
     const bar = el('span', { className: 'grf-item-bar' }, moveSelect(repo.fullName, UNSORTED, 'Pasta'));
     li.querySelector('h3')?.append(bar);
@@ -1111,5 +1111,10 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
   scheduleRender();
 });
 
-new MutationObserver(() => mountIfNeeded()).observe(document.documentElement, { childList: true, subtree: true });
+// A pesquisa "Find a repository" substitui os itens da lista sem trocar o contentor:
+// os itens novos ainda não têm arrastar nem menu de pasta.
+new MutationObserver(() => {
+  mountIfNeeded();
+  if (lastListEl && document.querySelector('#user-repositories-list li[itemprop~="owns"]:not([data-grf])')) scheduleRender();
+}).observe(document.documentElement, { childList: true, subtree: true });
 mountIfNeeded();
