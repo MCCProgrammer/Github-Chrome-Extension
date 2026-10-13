@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <img alt="Manifest V3" src="https://img.shields.io/badge/Manifest-V3-4493f8?style=flat-square">
-  <img alt="Chrome" src="https://img.shields.io/badge/Chrome-114%2B-8957e5?style=flat-square&logo=googlechrome&logoColor=white">
-  <img alt="Sem dependências" src="https://img.shields.io/badge/dependências-0-3fb950?style=flat-square">
-  <img alt="Licença MIT" src="https://img.shields.io/badge/licença-MIT-d29922?style=flat-square">
+  <img alt="Manifest V3" src="https://img.shields.io/badge/Manifest-V3-1f2328?style=flat-square">
+  <img alt="Chrome" src="https://img.shields.io/badge/Chrome-114%2B-1f2328?style=flat-square&logo=googlechrome&logoColor=white">
+  <img alt="Sem dependências" src="https://img.shields.io/badge/dependências-0-1f2328?style=flat-square">
+  <img alt="Licença MIT" src="https://img.shields.io/badge/licença-MIT-1f2328?style=flat-square">
 </p>
 
 ---

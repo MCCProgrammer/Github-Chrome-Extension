@@ -1,32 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2f81f7"/>
-      <stop offset="1" stop-color="#8957e5"/>
-    </linearGradient>
-    <linearGradient id="back" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity=".55"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity=".35"/>
-    </linearGradient>
-    <linearGradient id="front" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#e8eefc"/>
-    </linearGradient>
-    <filter id="sh" x="-20%" y="-20%" width="140%" height="150%">
-      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1b1f5e" flood-opacity=".35"/>
-    </filter>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="#1f2328"/>
   <!-- costas da pasta, com a aba -->
-  <path d="M96 150a34 34 0 0 1 34-34h82c11 0 21 5 27 13l18 23h125a34 34 0 0 1 34 34v170H96z" fill="url(#back)"/>
+  <path d="M96 150a34 34 0 0 1 34-34h82c11 0 21 5 27 13l18 23h125a34 34 0 0 1 34 34v170H96z" fill="#ffffff" fill-opacity=".45"/>
   <!-- frente da pasta -->
-  <path filter="url(#sh)" d="M96 206a30 30 0 0 1 30-30h260a30 30 0 0 1 30 30v150a40 40 0 0 1-40 40H136a40 40 0 0 1-40-40z" fill="url(#front)"/>
+  <path d="M96 206a30 30 0 0 1 30-30h260a30 30 0 0 1 30 30v150a40 40 0 0 1-40 40H136a40 40 0 0 1-40-40z" fill="#ffffff"/>
   <!-- ramo git -->
-  <g fill="none" stroke="#5b5fe0" stroke-width="22" stroke-linecap="round">
+  <g fill="none" stroke="#1f2328" stroke-width="22" stroke-linecap="round">
     <path d="M206 236v108"/>
     <path d="M306 254v8a40 40 0 0 1-40 40h-20a40 40 0 0 0-40 40"/>
   </g>
-  <g fill="#ffffff" stroke="#5b5fe0" stroke-width="20">
+  <g fill="#ffffff" stroke="#1f2328" stroke-width="20">
     <circle cx="206" cy="236" r="22"/>
     <circle cx="306" cy="246" r="22"/>
     <circle cx="206" cy="350" r="22"/>
