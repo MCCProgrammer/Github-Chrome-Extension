@@ -4,19 +4,22 @@
 const UNSORTED = '__unsorted__';
 const MAX_PAGES = 50;
 
-const state = { folders: [], repos: [] };
+const state = { folders: [], repos: [], collab: [], collabCollapsed: false };
 let syncing = false;
+let loadingCollab = false;
 
 // ---------- Armazenamento ----------
 
 async function load() {
-  const d = await chrome.storage.local.get(['folders', 'repos']);
+  const d = await chrome.storage.local.get(['folders', 'repos', 'collabRepos', 'collabCollapsed']);
   state.folders = d.folders || [];
   state.repos = d.repos || [];
+  state.collab = d.collabRepos || [];
+  state.collabCollapsed = !!d.collabCollapsed;
 }
 
 function save() {
-  return chrome.storage.local.set({ folders: state.folders });
+  return chrome.storage.local.set({ folders: state.folders, collabCollapsed: state.collabCollapsed });
 }
 
 function mergeRepos(found) {
@@ -72,6 +75,62 @@ async function syncAllPages() {
     setStatus(`Falhou a sincronização: ${err.message}`, true);
   } finally {
     syncing = false;
+  }
+}
+
+// ---------- Repositórios onde és colaborador ----------
+// A página do perfil só mostra os repositórios de que és dono. Os de colaboração vêm
+// da API (se houver token no painel lateral ⚙) ou, sem token, de github.com/settings/repositories.
+
+const RESERVED_OWNERS = new Set(['settings', 'orgs', 'organizations', 'users', 'notifications', 'marketplace',
+  'features', 'enterprise', 'sponsors', 'topics', 'collections', 'explore', 'pulls', 'issues', 'codespaces',
+  'login', 'logout', 'new', 'apps', 'account', 'dashboard', 'copilot', 'github-copilot', 'site', 'about',
+  'pricing', 'security', 'customer-stories', 'readme', 'team', 'trending', 'search', 'contact', 'blog', 'watching', 'stars']);
+
+function loggedInUser() {
+  return document.querySelector('meta[name="user-login"]')?.content || '';
+}
+
+function isOwnProfile() {
+  const me = loggedInUser().toLowerCase();
+  return !!me && me === profileOwner().toLowerCase();
+}
+
+async function scrapeCollabFromSettings(me) {
+  const res = await fetch('/settings/repositories', { credentials: 'include' });
+  if (!res.ok) throw new Error(`Erro ${res.status}`);
+  const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+  const root = doc.querySelector('main') || doc.body;
+  const names = new Map();
+  for (const a of root.querySelectorAll('a[href]')) {
+    const m = a.getAttribute('href').match(/^\/([\w.-]+)\/([\w.-]+)\/?$/);
+    if (!m || RESERVED_OWNERS.has(m[1].toLowerCase()) || m[1].toLowerCase() === me.toLowerCase()) continue;
+    const fullName = `${m[1]}/${m[2]}`;
+    names.set(fullName.toLowerCase(), { fullName, description: '', private: false, archived: false, fork: false });
+  }
+  return [...names.values()];
+}
+
+async function refreshCollaborations() {
+  if (loadingCollab || !isOwnProfile()) return;
+  loadingCollab = true;
+  try {
+    const me = loggedInUser();
+    const viaApi = await chrome.runtime.sendMessage({ type: 'fetchCollabRepos' });
+    let found;
+    if (viaApi?.repos) found = viaApi.repos.filter((r) => !r.fullName.toLowerCase().startsWith(`${me.toLowerCase()}/`));
+    else found = await scrapeCollabFromSettings(me);
+
+    // Não apagar a informação (privado, descrição…) que já tenhamos da API.
+    const known = new Map(state.repos.map((r) => [r.fullName.toLowerCase(), r]));
+    await mergeRepos(found.map((r) => (viaApi?.repos ? r : known.get(r.fullName.toLowerCase()) || r)));
+    state.collab = found.map((r) => r.fullName);
+    await chrome.storage.local.set({ collabRepos: state.collab });
+    render();
+  } catch (err) {
+    setStatus(`Não consegui obter as colaborações (${err.message}). Adiciona um token no painel lateral da extensão (⚙).`, true);
+  } finally {
+    loadingCollab = false;
   }
 }
 
@@ -203,8 +262,39 @@ function makeDropTarget(node, folderId) {
   });
 }
 
+function renderRepoRow(fullName, folderId) {
+  const repo = state.repos.find((r) => r.fullName.toLowerCase() === fullName.toLowerCase());
+  const [o, n] = fullName.split('/');
+  const link = el('a', { href: `/${fullName}`, className: 'Link--primary', title: repo?.description || fullName });
+  if (o.toLowerCase() !== profileOwner().toLowerCase()) link.append(el('span', { className: 'color-fg-muted', textContent: `${o}/` }));
+  link.append(n);
+  const row = el('li', { className: 'grf-repo' }, link);
+  if (repo?.private) row.append(el('span', { className: 'Label Label--secondary', textContent: 'Private' }));
+  if (repo?.archived) row.append(el('span', { className: 'Label Label--attention', textContent: 'Archived' }));
+  if (repo?.fork) row.append(el('span', { className: 'Label Label--secondary', textContent: 'Fork' }));
+  row.append(moveSelect(fullName, folderId));
+  makeDraggable(row, fullName);
+  return row;
+}
+
+// Secção com as colaborações que ainda não estão em nenhuma pasta.
+function renderCollab() {
+  const pending = state.collab.filter((n) => !folderOf(n));
+  if (pending.length === 0) return null;
+  const toggle = el('button', { className: 'btn-octicon grf-toggle', type: 'button', title: 'Expandir/recolher', textContent: state.collabCollapsed ? '▸' : '▾' });
+  toggle.addEventListener('click', () => {
+    state.collabCollapsed = !state.collabCollapsed;
+    save();
+    render();
+  });
+  const head = el('div', { className: 'grf-folder-head grf-static' }, toggle, '🤝',
+    el('span', { className: 'grf-folder-name', textContent: 'Colaborações sem pasta' }),
+    el('span', { className: 'Counter', textContent: pending.length }));
+  const list = el('ul', { className: 'grf-repos' }, ...pending.map((n) => renderRepoRow(n, UNSORTED)));
+  return el('div', { className: `grf-folder grf-collab${state.collabCollapsed ? ' grf-collapsed' : ''}` }, head, list);
+}
+
 function renderFolder(folder) {
-  const owner = profileOwner().toLowerCase();
   const toggle = el('button', { className: 'btn-octicon grf-toggle', type: 'button', title: 'Expandir/recolher', textContent: folder.collapsed ? '▸' : '▾' });
   const name = el('span', { className: 'grf-folder-name', textContent: folder.name });
   const total = FolderTree.allRepos(state.folders, folder).length;
@@ -221,20 +311,7 @@ function renderFolder(folder) {
   const childBox = el('div', { className: 'grf-children' }, ...subfolders.map(renderFolder));
   const list = el('ul', { className: 'grf-repos' });
 
-  for (const fullName of folder.repos) {
-    const repo = state.repos.find((r) => r.fullName.toLowerCase() === fullName.toLowerCase());
-    const [o, n] = fullName.split('/');
-    const link = el('a', { href: `/${fullName}`, className: 'Link--primary', title: repo?.description || fullName });
-    if (o.toLowerCase() !== owner) link.append(el('span', { className: 'color-fg-muted', textContent: `${o}/` }));
-    link.append(n);
-    const row = el('li', { className: 'grf-repo' }, link);
-    if (repo?.private) row.append(el('span', { className: 'Label Label--secondary', textContent: 'Private' }));
-    if (repo?.archived) row.append(el('span', { className: 'Label Label--attention', textContent: 'Archived' }));
-    if (repo?.fork) row.append(el('span', { className: 'Label Label--secondary', textContent: 'Fork' }));
-    row.append(moveSelect(fullName, folder.id));
-    makeDraggable(row, fullName);
-    list.append(row);
-  }
+  for (const fullName of folder.repos) list.append(renderRepoRow(fullName, folder.id));
   if (folder.repos.length === 0 && subfolders.length === 0) {
     list.append(el('li', { className: 'grf-empty color-fg-muted', textContent: 'Arrasta repositórios ou pastas para aqui' }));
   }
@@ -261,7 +338,10 @@ function renderPanel() {
   if (!list) return;
   if (!panel) {
     const syncBtn = el('button', { className: 'btn btn-sm', type: 'button', textContent: '⟳ Sincronizar páginas', title: 'Lê todas as páginas da lista de repositórios' });
-    syncBtn.addEventListener('click', syncAllPages);
+    syncBtn.addEventListener('click', () => {
+      syncAllPages();
+      refreshCollaborations();
+    });
     const newBtn = el('button', { className: 'btn btn-sm btn-primary', type: 'button', textContent: '+ Nova pasta' });
     newBtn.addEventListener('click', () => createFolder());
 
@@ -279,6 +359,10 @@ function renderPanel() {
   container.replaceChildren(...FolderTree.children(state.folders).map(renderFolder));
   if (state.folders.length === 0) {
     container.append(el('div', { className: 'grf-empty color-fg-muted', textContent: 'Ainda não tens pastas. Cria uma e arrasta repositórios da lista abaixo para dentro dela.' }));
+  }
+  if (isOwnProfile()) {
+    const collab = renderCollab();
+    if (collab) container.append(collab);
   }
 }
 
@@ -323,10 +407,11 @@ async function mountIfNeeded() {
   const hasMorePages = document.querySelector('.paginate-container a[rel="next"], a.next_page');
   const knownForOwner = state.repos.filter((r) => r.fullName.toLowerCase().startsWith(`${owner}/`)).length;
   if (hasMorePages && knownForOwner <= onPage.length) syncAllPages();
+  refreshCollaborations();
 }
 
 chrome.storage.onChanged.addListener(async (changes, area) => {
-  if (area !== 'local' || !('folders' in changes || 'repos' in changes)) return;
+  if (area !== 'local' || !('folders' in changes || 'repos' in changes || 'collabRepos' in changes)) return;
   if (document.querySelector('#grf-panel .grf-rename')) return; // não interromper a edição de um nome
   await load();
   render();

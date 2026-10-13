@@ -56,3 +56,6 @@
 .grf-children:not(:empty) { padding-top: 8px; padding-bottom: 8px; display: grid; gap: 8px; border-top: 1px solid var(--borderColor-muted, #d1d9e0b3); }
 .grf-collapsed .grf-children { display: none; }
 #grf-panel .grf-folders.grf-drop { outline-offset: 2px; }
+
+/* Colaborações */
+.grf-folder-head.grf-static { cursor: default; }
