@@ -1006,7 +1006,7 @@ async function mountIfNeeded() {
 }
 
 chrome.storage.onChanged.addListener(async (changes, area) => {
-  if (area !== 'local' || !mounted || !Session.changed(state.login, changes)) return;
+  if ((area !== 'local' && area !== 'sync') || !mounted || !Session.changed(state.login, changes, area)) return;
   if (document.querySelector('#grf-panel .grf-rename')) return;
   await load();
   scheduleRender();

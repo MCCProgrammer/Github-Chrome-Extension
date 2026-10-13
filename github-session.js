@@ -2,6 +2,8 @@
 // A conta é a que tem sessão iniciada no github.com (não há token nem utilizador para configurar)
 // e cada conta tem os seus dados: as chaves levam o login, ex.: "folders@octocat".
 // Os repositórios são lidos das páginas do GitHub com a sessão, por isso incluem os privados.
+// As pastas também vão para chrome.storage.sync: acompanham a conta Google do Chrome e aparecem
+// já organizadas noutros computadores. O resto (cache dos repositórios) é grande e fica só local.
 const GITHUB = 'https://github.com';
 
 const Session = {
@@ -17,15 +19,65 @@ const Session = {
     const d = await chrome.storage.local.get([...keys, ...extraKeys]);
     const out = Object.fromEntries(extraKeys.map((k) => [k, d[k]]));
     this.ACCOUNT_KEYS.forEach((n, i) => { out[n] = d[keys[i]]; });
+    const synced = await this.loadSyncedFolders(login);
+    if (synced) out.folders = synced;
+    else if (out.folders?.length) this.saveSyncedFolders(login, out.folders); // primeira vez: envia as pastas locais
     return out;
   },
 
+  // Grava em local (rápido e sem limites) e, no caso das pastas, também no sync.
   save(login, patch) {
-    return chrome.storage.local.set(Object.fromEntries(Object.entries(patch).map(([n, v]) => [this.key(login, n), v])));
+    const local = chrome.storage.local.set(Object.fromEntries(Object.entries(patch).map(([n, v]) => [this.key(login, n), v])));
+    return Promise.all([local, patch.folders && this.saveSyncedFolders(login, patch.folders)]);
   },
 
-  changed(login, changes) {
+  // As alterações tocam nesta conta? No 'sync' ignora o eco das gravações feitas aqui:
+  // podia chegar depois de uma alteração mais recente e repor pastas antigas.
+  changed(login, changes, area = 'local') {
+    if (area === 'sync') {
+      const head = changes[this.key(login, 'folders')]?.newValue;
+      return !!head && !this.ownWrites.has(head.savedAt);
+    }
     return this.ACCOUNT_KEYS.some((n) => this.key(login, n) in changes);
+  },
+
+  // ---------- Pastas no chrome.storage.sync ----------
+  // O sync aceita no máximo 8 KB por item, por isso o JSON vai em pedaços:
+  //   "folders@login" = { chunks, savedAt } e "folders@login#0", "#1", … = texto.
+  // 3000 caracteres cabem num item mesmo com acentos e aspas escapadas.
+  CHUNK: 3000,
+  ownWrites: new Set(), // savedAt das gravações feitas neste contexto
+
+  async loadSyncedFolders(login) {
+    const key = this.key(login, 'folders');
+    try {
+      const head = (await chrome.storage.sync.get(key))[key];
+      if (!head) return null;
+      const keys = Array.from({ length: head.chunks }, (_, i) => `${key}#${i}`);
+      const parts = await chrome.storage.sync.get(keys);
+      return JSON.parse(keys.map((k) => parts[k]).join(''));
+    } catch {
+      return null; // sync indisponível ou a meio de uma atualização: fica a cópia local
+    }
+  },
+
+  async saveSyncedFolders(login, folders) {
+    const key = this.key(login, 'folders');
+    const json = JSON.stringify(folders);
+    const chunks = Math.max(1, Math.ceil(json.length / this.CHUNK));
+    const savedAt = Date.now() + Math.random(); // único, para reconhecer o eco
+    this.ownWrites.add(savedAt);
+    const items = { [key]: { chunks, savedAt } };
+    for (let i = 0; i < chunks; i++) items[`${key}#${i}`] = json.slice(i * this.CHUNK, (i + 1) * this.CHUNK);
+    try {
+      const old = (await chrome.storage.sync.get(key))[key];
+      await chrome.storage.sync.set(items);
+      if (old?.chunks > chunks) {
+        await chrome.storage.sync.remove(Array.from({ length: old.chunks - chunks }, (_, i) => `${key}#${chunks + i}`));
+      }
+    } catch (err) {
+      console.warn('GitHub Repo Folders: não foi possível sincronizar as pastas', err); // ficam em local
+    }
   },
 
   // Regista a conta ativa. Na primeira vez, os dados antigos (anteriores às contas) passam para ela.

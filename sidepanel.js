@@ -591,9 +591,9 @@ async function init() {
   // Mantém-se sincronizado com a página do GitHub, incluindo trocas de conta
   // (a página regista a conta com sessão iniciada sempre que é aberta).
   chrome.storage.onChanged.addListener(async (changes, area) => {
-    if (area !== 'local') return;
+    if (area !== 'local' && area !== 'sync') return;
     const switched = 'account' in changes;
-    if (!switched && !(state.login && Session.changed(state.login, changes))) return;
+    if (!switched && !(state.login && Session.changed(state.login, changes, area))) return;
     await load();
     renderProfile();
     render();

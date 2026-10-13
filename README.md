@@ -30,6 +30,7 @@ O GitHub mostra todos os repositórios numa lista única. Quando tens dezenas (p
 - [Como usar](#como-usar)
 - [Contas](#contas)
 - [README do perfil](#readme-do-perfil)
+- [Sincronização entre computadores](#sincronização-entre-computadores)
 - [Cópia de segurança](#cópia-de-segurança-exportar--importar)
 - [Privacidade e permissões](#privacidade-e-permissões)
 - [Problemas comuns](#problemas-comuns)
@@ -55,6 +56,7 @@ O GitHub mostra todos os repositórios numa lista única. Quando tens dezenas (p
 - Pesquisa, criação, renomeação e cores de pastas, e menu "Mover para…" como alternativa ao arrastar.
 - Deteta sozinho a conta com sessão iniciada e muda de pastas quando trocas de conta.
 - Exportar e importar as pastas em JSON.
+- ☁️ As pastas **sincronizam com a tua conta Google do Chrome**: noutro computador aparecem já organizadas.
 - Tema claro e escuro, igual ao do GitHub.
 
 As duas vistas partilham os mesmos dados: o que muda numa aparece logo na outra.
@@ -133,6 +135,20 @@ O GitHub mostra no teu perfil o README do repositório especial `<utilizador>/<u
 
 A secção fica entre `<!-- REPO-FOLDERS:START -->` e `<!-- REPO-FOLDERS:END -->`. Para atualizar mais tarde, substitui só esse bloco.
 
+## Sincronização entre computadores
+
+As pastas são guardadas no `chrome.storage.sync`, que acompanha a conta Google com sessão iniciada no Chrome. Noutro computador basta:
+
+1. Ter sessão iniciada no Chrome com a mesma conta Google e a sincronização de **Extensões** ligada (`chrome://settings/syncSetup` → *Gerir o que sincronizas*);
+2. Instalar a extensão (ver [Instalação](#instalação));
+3. Iniciar sessão no GitHub com a mesma conta.
+
+As pastas aparecem já organizadas e cada alteração passa para os outros computadores em poucos segundos. A lista de repositórios é lida outra vez do GitHub em cada computador.
+
+> O `manifest.json` tem uma `key` que fixa o ID da extensão (`oohheekikjbgehgidbclgfjdaneebeaa`). É isso que permite ao Chrome reconhecer a mesma extensão em computadores diferentes, mesmo instalada a partir do código. Não a removas.
+
+O sync do Chrome guarda até 100 KB por extensão, o que chega para centenas de pastas e milhares de repositórios. Se esse limite for ultrapassado, as pastas continuam guardadas no computador e deixam de sincronizar.
+
 ## Cópia de segurança (exportar / importar)
 
 As pastas ficam guardadas no browser. Para as passares para outro computador ou fazeres uma cópia de segurança:
@@ -140,7 +156,7 @@ As pastas ficam guardadas no browser. Para as passares para outro computador ou 
 - **⚙ Conta → Exportar pastas** descarrega `github-repo-folders.json` (as pastas da conta atual);
 - **⚙ Conta → Importar pastas** carrega esse ficheiro noutro browser.
 
-> ⚠️ Se removeres a extensão, as pastas são apagadas. Exporta-as antes.
+> ⚠️ Se removeres a extensão e não usares a sincronização do Chrome, as pastas são apagadas. Exporta-as antes.
 
 ## Privacidade e permissões
 
@@ -148,7 +164,7 @@ Não há servidores, análises de utilização nem rastreio. Não pede nem guard
 
 | Permissão | Para quê |
 | --- | --- |
-| `storage` | Guardar as pastas e a cache dos repositórios de cada conta no teu browser |
+| `storage` | Guardar as pastas (sincronizadas com a tua conta Google do Chrome) e a cache dos repositórios de cada conta |
 | `sidePanel` | Mostrar o painel lateral ao clicar no ícone |
 | `tabs` | Saber que repositório está aberto no separador atual, para o destacar |
 | `https://github.com/*` | Detetar a conta com sessão iniciada e ler as listas de repositórios (incluindo privados) |
