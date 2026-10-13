@@ -6,62 +6,59 @@
   <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body>
-  <header>
-    <h1>📁 Repo Folders</h1>
-    <div class="header-actions">
-      <button id="refreshBtn" title="Atualizar repositórios">⟳</button>
-      <button id="settingsBtn" title="Definições">⚙</button>
+  <header class="app-header">
+    <img class="logo" src="icons/icon48.png" alt="">
+    <div class="app-title">
+      <strong>Repo Folders</strong>
+      <span id="subtitle" class="subtitle"></span>
     </div>
+    <a id="profileLink" class="avatar-link" target="_blank" rel="noopener" hidden>
+      <img id="avatar" class="avatar" alt="">
+    </a>
+    <button id="refreshBtn" class="btn-icon" type="button" title="Atualizar repositórios" aria-label="Atualizar repositórios"></button>
+    <button id="settingsBtn" class="btn-icon" type="button" title="Definições" aria-label="Definições"></button>
   </header>
 
-  <section id="settings" class="settings hidden">
-    <label>Utilizador GitHub
-      <input id="usernameInput" type="text" placeholder="ex: octocat" autocomplete="off">
-    </label>
-    <label>Token (opcional — necessário para repos privados)
-      <input id="tokenInput" type="password" placeholder="ghp_..." autocomplete="off">
-    </label>
-    <p class="hint">Cria um token em GitHub → Settings → Developer settings → Personal access tokens, com permissão de leitura de repositórios. Fica guardado apenas neste browser.</p>
-    <div class="row">
-      <button id="saveSettingsBtn" class="primary">Guardar</button>
-      <button id="exportBtn">Exportar pastas</button>
-      <button id="importBtn">Importar pastas</button>
-      <input id="importFile" type="file" accept="application/json" hidden>
+  <section id="settings" class="settings" hidden>
+    <div class="box">
+      <div class="box-header">Definições</div>
+      <div class="box-body">
+        <label class="field">
+          <span class="field-label">Utilizador GitHub</span>
+          <input id="usernameInput" class="input" type="text" placeholder="ex: octocat" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="field">
+          <span class="field-label">Personal access token <span class="muted">(opcional)</span></span>
+          <input id="tokenInput" class="input" type="password" placeholder="github_pat_…" autocomplete="off">
+          <span class="field-hint">Necessário para repositórios privados, colaborações e publicar no README do perfil.
+            Cria-o em <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Settings → Developer settings</a>.
+            Fica guardado apenas neste browser.</span>
+        </label>
+        <div class="actions">
+          <button id="saveSettingsBtn" class="btn btn-primary" type="button">Guardar</button>
+          <span class="spacer"></span>
+          <button id="exportBtn" class="btn" type="button">Exportar</button>
+          <button id="importBtn" class="btn" type="button">Importar</button>
+          <input id="importFile" type="file" accept="application/json" hidden>
+        </div>
+      </div>
     </div>
   </section>
 
   <div class="toolbar">
-    <input id="searchInput" type="search" placeholder="Pesquisar repositórios…">
-    <button id="newFolderBtn" class="primary" title="Nova pasta">+ Pasta</button>
+    <label class="search">
+      <span id="searchIcon"></span>
+      <input id="searchInput" type="search" placeholder="Procurar repositórios…" autocomplete="off">
+    </label>
+    <button id="newFolderBtn" class="btn btn-primary" type="button" title="Nova pasta"></button>
   </div>
 
-  <div id="status" class="status"></div>
+  <div id="status" class="flash" hidden></div>
   <main id="folders"></main>
 
-  <template id="folderTpl">
-    <section class="folder">
-      <div class="folder-head">
-        <button class="toggle" title="Expandir/recolher">▾</button>
-        <span class="folder-name"></span>
-        <span class="count"></span>
-        <span class="folder-actions">
-          <button class="add-sub" title="Nova subpasta">+📁</button>
-          <button class="rename" title="Mudar nome">✎</button>
-          <button class="delete" title="Apagar pasta">🗑</button>
-        </span>
-      </div>
-      <div class="children"></div>
-      <ul class="repos"></ul>
-    </section>
-  </template>
-
-  <template id="repoTpl">
-    <li class="repo" draggable="true">
-      <a class="repo-link" target="_blank" rel="noopener"></a>
-      <span class="badges"></span>
-      <select class="move" title="Mover para pasta"></select>
-    </li>
-  </template>
+  <footer class="app-footer">
+    <a id="openRepos" target="_blank" rel="noopener">Abrir os meus repositórios no GitHub ↗</a>
+  </footer>
 
   <script src="folders-core.js"></script>
   <script src="sidepanel.js"></script>
