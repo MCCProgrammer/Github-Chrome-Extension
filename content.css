@@ -50,8 +50,8 @@
   height: 36px;
   border-radius: 10px;
   color: #fff;
-  background: linear-gradient(135deg, #4493f8, #a371f7);
-  box-shadow: 0 4px 12px -4px color-mix(in srgb, #4493f8 60%, transparent);
+  background: #1f2328; /* igual ao ícone da extensão */
+  box-shadow: 0 0 0 1px var(--grf-border);
 }
 .grf-title-icon .grf-icon { width: 18px; height: 18px; }
 .grf-title-text { font-size: 16px; font-weight: 600; line-height: 1.2; }
