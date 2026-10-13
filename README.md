@@ -20,11 +20,7 @@
 O GitHub mostra todos os repositórios numa lista única. Quando tens dezenas (projetos da faculdade, trabalho, experiências, forks…) fica difícil encontrar as coisas. Esta extensão junta à lista de repositórios um painel de pastas onde arrastas cada repositório para o sítio certo. Não há nada para configurar: a extensão usa a conta com sessão iniciada no github.com e tudo fica guardado no teu browser.
 
 <p align="center">
-  <img src="docs/profile-panel.png" width="820" alt="Painel de pastas na página de repositórios do perfil">
-</p>
-
-<p align="center">
-  <img src="docs/sidepanel.png" width="560" alt="Painel lateral da extensão, em modo claro e escuro">
+  <img src="docs/screenshot-dark.png" alt="Painel de pastas na página de repositórios do GitHub">
 </p>
 
 ## Índice
