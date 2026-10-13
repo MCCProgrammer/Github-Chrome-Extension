@@ -17,7 +17,7 @@
 
 ---
 
-O GitHub mostra todos os repositórios numa lista única. Quando tens dezenas (projetos da faculdade, trabalho, experiências, forks…) fica difícil encontrar as coisas. Esta extensão junta à lista de repositórios um painel de pastas onde arrastas cada repositório para o sítio certo. Tudo fica guardado no teu browser.
+O GitHub mostra todos os repositórios numa lista única. Quando tens dezenas (projetos da faculdade, trabalho, experiências, forks…) fica difícil encontrar as coisas. Esta extensão junta à lista de repositórios um painel de pastas onde arrastas cada repositório para o sítio certo. Não há nada para configurar: a extensão usa a conta com sessão iniciada no github.com e tudo fica guardado no teu browser.
 
 <p align="center">
   <img src="docs/sidepanel.png" width="640" alt="Painel lateral da extensão, em modo claro e escuro">
@@ -28,7 +28,7 @@ O GitHub mostra todos os repositórios numa lista única. Quando tens dezenas (p
 - [Funcionalidades](#funcionalidades)
 - [Instalação](#instalação)
 - [Como usar](#como-usar)
-- [Token do GitHub (opcional)](#token-do-github-opcional)
+- [Contas](#contas)
 - [README do perfil](#readme-do-perfil)
 - [Cópia de segurança](#cópia-de-segurança-exportar--importar)
 - [Privacidade e permissões](#privacidade-e-permissões)
@@ -37,7 +37,7 @@ O GitHub mostra todos os repositórios numa lista única. Quando tens dezenas (p
 
 ## Funcionalidades
 
-**Na página do perfil** (`github.com/<utilizador>?tab=repositories`)
+**Na página dos teus repositórios** (`github.com/<a-tua-conta>?tab=repositories`)
 
 - 📁 Painel de **pastas e subpastas** por cima da lista de repositórios.
 - 🖱️ **Arrastar e largar** repositórios da lista (incluindo os resultados de *Find a repository…*) para dentro das pastas, e pastas para dentro de outras pastas.
@@ -46,13 +46,14 @@ O GitHub mostra todos os repositórios numa lista única. Quando tens dezenas (p
 - 🔎 Pesquisa dentro das pastas.
 - 🔄 Botão **Sincronizar**, que lê todas as páginas da lista (não só a primeira).
 - 🤝 Secção **Colaborações** com os repositórios de outras pessoas ou organizações onde participas.
-- 📝 Geração de uma secção para o **README do perfil** com as tuas pastas (copiar ou publicar diretamente).
+- 📝 Geração de uma secção para o **README do perfil** com as tuas pastas, pronta a copiar.
 
 **No painel lateral** (clica no ícone da extensão)
 
-- As mesmas pastas, disponíveis em qualquer página.
+- As mesmas pastas, disponíveis em qualquer página, com os repositórios públicos e privados.
 - O repositório aberto no separador atual fica destacado, para o arrumares logo.
 - Pesquisa, criação, renomeação e cores de pastas, e menu "Mover para…" como alternativa ao arrastar.
+- Deteta sozinho a conta com sessão iniciada e muda de pastas quando trocas de conta.
 - Exportar e importar as pastas em JSON.
 - Tema claro e escuro, igual ao do GitHub.
 
@@ -88,7 +89,7 @@ Depois, em `chrome://extensions`, carrega no botão ↻ da extensão e recarrega
 
 ### 1. Na página dos teus repositórios
 
-1. Abre `https://github.com/<o-teu-utilizador>?tab=repositories`.
+1. Com sessão iniciada no GitHub, abre o teu perfil → **Repositories** (`https://github.com/<a-tua-conta>?tab=repositories`). O painel só aparece na lista da tua própria conta, não nos perfis de outras pessoas.
 2. Por cima da lista aparece o painel **Pastas**. Carrega em **Nova pasta** e escreve um nome (Enter para confirmar).
 3. **Arrasta** um repositório da lista para a pasta. Também podes usar o botão **Pasta** que aparece ao lado do nome de cada repositório.
 4. Os repositórios que já estão numa pasta deixam de aparecer na lista de baixo, por isso o que fica na lista é o que ainda falta arrumar.
@@ -110,31 +111,17 @@ Depois, em `chrome://extensions`, carrega no botão ↻ da extensão e recarrega
 ### 2. No painel lateral
 
 1. Clica no ícone da extensão na barra do Chrome para abrir o painel lateral.
-2. Na primeira vez, abre as **Definições** (⚙) e escreve o teu utilizador do GitHub. Carrega em **Guardar** para importar os repositórios públicos.
+2. A conta é detetada automaticamente e os repositórios (incluindo os privados) são carregados. Se não tiveres sessão iniciada, aparece um botão para **Iniciar sessão**.
 3. Arrasta repositórios entre pastas, ou usa o menu ⋯ de cada linha.
 4. Ao navegares no GitHub, o repositório que tens aberto aparece destacado a amarelo, para o meteres numa pasta.
 
-## Token do GitHub (opcional)
+## Contas
 
-Sem token, a extensão já faz quase tudo: lê os repositórios da página do perfil com a tua sessão do GitHub e usa a API pública (60 pedidos por hora).
+Não há utilizador nem token para configurar. A extensão lê a conta com sessão iniciada no github.com e usa essa sessão para ler as listas de repositórios. É assim que aparecem também os repositórios privados.
 
-O token é necessário para:
-
-- ver repositórios **privados** no painel lateral;
-- listar **colaborações** e repositórios de organizações através da API;
-- **publicar diretamente** no README do perfil;
-- evitar o limite de 60 pedidos por hora da API.
-
-Como criar:
-
-1. Vai a [**Settings → Developer settings → Fine-grained tokens → Generate new token**](https://github.com/settings/personal-access-tokens/new).
-2. Em *Repository access*, escolhe **All repositories** (ou só os que quiseres).
-3. Em *Permissions → Repository permissions*:
-   - **Metadata**: *Read-only* (obrigatório);
-   - **Contents**: *Read and write* — só se quiseres publicar o README do perfil.
-4. Gera o token, copia-o e cola-o em **⚙ Definições → Personal access token** no painel lateral.
-
-O token fica guardado apenas no `chrome.storage.local` deste browser e só é enviado para `api.github.com`.
+- **Cada conta tem as suas pastas.** Se trocares de conta no GitHub (menu do avatar → *Switch account*), o painel lateral passa para as pastas dessa conta. Ao voltares à conta anterior, as pastas dela estão lá.
+- O painel na página só aparece na lista de repositórios da **tua** conta. Nos perfis de outras pessoas o GitHub fica como sempre.
+- Em **⚙ Conta** no painel lateral vês qual é a conta detetada.
 
 ## README do perfil
 
@@ -142,31 +129,30 @@ O GitHub mostra no teu perfil o README do repositório especial `<utilizador>/<u
 
 1. Na página dos teus repositórios, carrega em **README** (só aparece no teu próprio perfil, e quando tens pastas).
 2. Escolhe as colunas e se queres incluir repositórios privados. Vês a pré-visualização tal como o GitHub a vai mostrar.
-3. Depois tens duas opções:
-   - **Copiar Markdown**: colas no `README.md` à mão;
-   - **Publicar diretamente**: grava o ficheiro por ti (precisa do token com *Contents: Read and write*).
+3. Carrega em **Copiar Markdown** e cola no `README.md` do repositório `<a-tua-conta>/<a-tua-conta>` (o botão **Abrir repositório do README** leva-te lá).
 
-A secção fica entre `<!-- REPO-FOLDERS:START -->` e `<!-- REPO-FOLDERS:END -->`. Ao publicares outra vez, só esse bloco é substituído; o resto do README não é alterado.
+A secção fica entre `<!-- REPO-FOLDERS:START -->` e `<!-- REPO-FOLDERS:END -->`. Para atualizar mais tarde, substitui só esse bloco.
 
 ## Cópia de segurança (exportar / importar)
 
 As pastas ficam guardadas no browser. Para as passares para outro computador ou fazeres uma cópia de segurança:
 
-- **⚙ Definições → Exportar** descarrega `github-repo-folders.json`;
-- **⚙ Definições → Importar** carrega esse ficheiro noutro browser.
+- **⚙ Conta → Exportar pastas** descarrega `github-repo-folders.json` (as pastas da conta atual);
+- **⚙ Conta → Importar pastas** carrega esse ficheiro noutro browser.
 
 > ⚠️ Se removeres a extensão, as pastas são apagadas. Exporta-as antes.
 
 ## Privacidade e permissões
 
-Não há servidores, análises de utilização nem rastreio. Os únicos pedidos de rede são para `github.com` (com a tua sessão) e para `api.github.com`.
+Não há servidores, análises de utilização nem rastreio. Não pede nem guarda palavras-passe ou tokens. Os únicos pedidos de rede são para `github.com` (com a sessão que já tens no browser) e para a API pública `api.github.com`.
 
 | Permissão | Para quê |
 | --- | --- |
-| `storage` | Guardar pastas, definições e a cache dos repositórios no teu browser |
+| `storage` | Guardar as pastas e a cache dos repositórios de cada conta no teu browser |
 | `sidePanel` | Mostrar o painel lateral ao clicar no ícone |
 | `tabs` | Saber que repositório está aberto no separador atual, para o destacar |
-| `https://api.github.com/*` | Ler repositórios e colaborações, e publicar o README do perfil |
+| `https://github.com/*` | Detetar a conta com sessão iniciada e ler as listas de repositórios (incluindo privados) |
+| `https://api.github.com/*` | Dados extra de repositórios públicos (data de criação, tamanho…) e pré-visualização do README |
 | Script em `https://github.com/*` | Desenhar o painel de pastas na página dos repositórios |
 
 ## Problemas comuns
@@ -174,7 +160,7 @@ Não há servidores, análises de utilização nem rastreio. Os únicos pedidos 
 <details>
 <summary><b>O painel não aparece na página do perfil</b></summary>
 
-Confirma que estás no separador **Repositories** (`?tab=repositories`). Se acabaste de instalar ou atualizar a extensão, recarrega a página.
+Confirma que estás no separador **Repositories** da **tua** conta (`?tab=repositories`) e com sessão iniciada. O painel não aparece nos perfis de outras pessoas. Se acabaste de instalar ou atualizar a extensão, recarrega a página.
 </details>
 
 <details>
@@ -184,28 +170,23 @@ Carrega em **Sincronizar** no painel da página. A sincronização lê todas as 
 </details>
 
 <details>
-<summary><b>"Limite da API atingido"</b></summary>
+<summary><b>O painel lateral mostra a conta errada</b></summary>
 
-Sem token, a API do GitHub só permite 60 pedidos por hora. Adiciona um token nas definições do painel lateral.
+O painel confirma a conta sempre que é aberto. Se trocaste de conta noutro separador, fecha e volta a abrir o painel, ou recarrega uma página do GitHub.
 </details>
 
 <details>
 <summary><b>Não aparecem as colaborações</b></summary>
 
-As colaborações só aparecem no teu próprio perfil. Sem token, são lidas de `github.com/settings/repositories`; com token, vêm da API e são mais completas.
-</details>
-
-<details>
-<summary><b>"Publicar diretamente" está desativado</b></summary>
-
-É preciso um token com permissão **Contents: Read and write** no repositório `<utilizador>/<utilizador>`, e esse repositório tem de existir (e ser público). O botão também fica desativado quando o README já está atualizado.
+As colaborações são lidas de `github.com/settings/repositories` com a tua sessão. Carrega em **Sincronizar** (na página) ou em ↻ (no painel lateral) para as atualizar.
 </details>
 
 ## Estrutura do projeto
 
 ```
 ├── manifest.json      # Configuração da extensão (Manifest V3)
-├── background.js      # Service worker: pedidos à API do GitHub e abertura do painel lateral
+├── background.js      # Service worker: API pública do GitHub e abertura do painel lateral
+├── github-session.js  # Conta com sessão iniciada, dados por conta e leitura das páginas do GitHub
 ├── content.js         # Painel de pastas na página github.com/<user>?tab=repositories
 ├── content.css        #   └ estilos do painel na página
 ├── folders-core.js    # Lógica da árvore de pastas (partilhada pelas duas vistas)

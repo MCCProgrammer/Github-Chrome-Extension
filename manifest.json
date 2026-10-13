@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GitHub Repo Folders",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Organiza os teus repositórios do GitHub em pastas e subpastas, diretamente no perfil e num painel lateral.",
   "permissions": [
     "storage",
@@ -9,6 +9,7 @@
     "tabs"
   ],
   "host_permissions": [
+    "https://github.com/*",
     "https://api.github.com/*"
   ],
   "background": {
@@ -39,6 +40,7 @@
       ],
       "js": [
         "folders-core.js",
+        "github-session.js",
         "readme.js",
         "content.js"
       ],

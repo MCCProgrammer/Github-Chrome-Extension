@@ -1,8 +1,7 @@
-// Injeta o painel de pastas na página github.com/<user>?tab=repositories.
-// Os repositórios são lidos da própria página (scraping) e partilham o mesmo
-// armazenamento que o painel lateral (folders / repos em chrome.storage.local).
+// Injeta o painel de pastas na página github.com/<user>?tab=repositories, só no perfil
+// da conta com sessão iniciada. Os repositórios são lidos da própria página (scraping) e
+// partilham o armazenamento da conta com o painel lateral (ver github-session.js).
 const UNSORTED = '__unsorted__';
-const MAX_PAGES = 50;
 const META_TTL = 12 * 60 * 60 * 1000; // contribuidores são revalidados a cada 12h
 const META_CONCURRENCY = 4;
 const FOLDER_COLORS = ['#4493f8', '#3fb950', '#a371f7', '#f0883e', '#db61a2', '#d29922', '#39c5cf', '#f85149'];
@@ -17,7 +16,7 @@ const LANGUAGE_COLORS = {
 
 // Colunas que se podem mostrar em cada repositório dentro das pastas.
 // field: campo do repositório (vem da lista do perfil ou da API); source: pedido próprio.
-// api: true = para os teus repos só existe na API (sem token: 60 pedidos/hora).
+// api: true = só existe na API pública do GitHub (60 pedidos/hora).
 const PANEL_COLUMNS = [
   { id: 'description', label: 'Descrição', icon: 'file', field: 'description', inline: true },
   { id: 'language', label: 'Linguagem', icon: 'code', width: '130px', field: 'language' },
@@ -36,7 +35,7 @@ const PANEL_COLUMNS = [
 const COLUMN_BY_ID = Object.fromEntries(PANEL_COLUMNS.map((c) => [c.id, c]));
 const DEFAULT_COLUMNS = ['description', 'language', 'contributors', 'updated', 'stars'];
 
-const state = { folders: [], repos: [], collab: [], collabCollapsed: false, meta: {}, query: '', columns: DEFAULT_COLUMNS };
+const state = { login: '', folders: [], repos: [], collab: [], collabCollapsed: false, meta: {}, query: '', columns: DEFAULT_COLUMNS };
 let syncing = false;
 let loadingCollab = false;
 
@@ -83,7 +82,8 @@ function icon(name, className = '') {
 // ---------- Armazenamento ----------
 
 async function load() {
-  const d = await chrome.storage.local.get(['folders', 'repos', 'collabRepos', 'collabCollapsed', 'repoMeta', 'panelColumns']);
+  state.login = loggedInUser();
+  const d = await Session.load(state.login, ['repoMeta', 'panelColumns']);
   state.columns = d.panelColumns || DEFAULT_COLUMNS;
   state.folders = d.folders || [];
   state.repos = d.repos || [];
@@ -94,7 +94,7 @@ async function load() {
 }
 
 function save() {
-  return chrome.storage.local.set({ folders: state.folders, collabCollapsed: state.collabCollapsed });
+  return Session.save(state.login, { folders: state.folders, collabCollapsed: state.collabCollapsed });
 }
 
 // Junta sem apagar campos já conhecidos (ex.: a API sabe a linguagem, a página não).
@@ -106,7 +106,7 @@ function mergeRepos(found) {
     byName.set(key, { ...byName.get(key), ...defined });
   }
   state.repos = [...byName.values()];
-  return chrome.storage.local.set({ repos: state.repos });
+  return Session.save(state.login, { repos: state.repos });
 }
 
 function findRepo(fullName) {
@@ -114,42 +114,19 @@ function findRepo(fullName) {
   return state.repos.find((r) => r.fullName.toLowerCase() === n);
 }
 
-// ---------- Scraping da lista ----------
-
-function parseCount(text) {
-  const t = (text || '').trim().toLowerCase().replace(/,/g, '');
-  const n = parseFloat(t);
-  if (Number.isNaN(n)) return undefined;
-  return Math.round(t.endsWith('k') ? n * 1000 : n);
-}
-
-function scrapeItems(root) {
-  return [...root.querySelectorAll('#user-repositories-list li[itemprop~="owns"]')].map((li) => {
-    const a = li.querySelector('a[itemprop~="codeRepository"]');
-    const labels = [...li.querySelectorAll('h3 .Label')].map((l) => l.textContent.trim().toLowerCase());
-    const fullName = a.getAttribute('href').replace(/^\//, '');
-    return {
-      li,
-      repo: {
-        fullName,
-        description: li.querySelector('[itemprop~="description"]')?.textContent.trim() || '',
-        private: labels.some((l) => l.includes('private')),
-        archived: labels.some((l) => l.includes('archive')),
-        fork: /forked from/i.test(li.textContent),
-        language: li.querySelector('[itemprop="programmingLanguage"]')?.textContent.trim() || '',
-        languageColor: li.querySelector('.repo-language-color')?.style.backgroundColor || undefined,
-        updatedAt: li.querySelector('relative-time')?.getAttribute('datetime') || undefined,
-        stars: parseCount(li.querySelector(`a[href="/${fullName}/stargazers"]`)?.textContent) ?? 0,
-        forks: parseCount(li.querySelector(`a[href="/${fullName}/forks"]`)?.textContent) ?? 0,
-        license: li.querySelector('.octicon-law')?.parentElement.textContent.trim() || '',
-        topics: [...li.querySelectorAll('a.topic-tag')].map((t) => t.textContent.trim()),
-      },
-    };
-  });
-}
+// ---------- Leitura da lista ----------
 
 function profileOwner() {
   return location.pathname.split('/')[1];
+}
+
+function loggedInUser() {
+  return document.querySelector('meta[name="user-login"]')?.content || '';
+}
+
+function isOwnProfile() {
+  const me = loggedInUser().toLowerCase();
+  return !!me && me === profileOwner().toLowerCase();
 }
 
 // Percorre todas as páginas da lista (?page=N) e guarda os repositórios.
@@ -157,17 +134,8 @@ async function syncAllPages() {
   if (syncing) return;
   syncing = true;
   setStatus('A ler todas as páginas…');
-  const found = [];
-  let url = `/${profileOwner()}?tab=repositories`;
   try {
-    for (let i = 0; url && i < MAX_PAGES; i++) {
-      const res = await fetch(url, { credentials: 'include' });
-      if (!res.ok) throw new Error(`Erro ${res.status}`);
-      const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-      found.push(...scrapeItems(doc).map((x) => x.repo));
-      url = doc.querySelector('.paginate-container a[rel="next"], a.next_page')?.getAttribute('href');
-      setStatus(`A ler todas as páginas… ${found.length} repositórios`);
-    }
+    const found = await Session.fetchOwnRepos(state.login, (n) => setStatus(`A ler todas as páginas… ${n} repositórios`));
     await mergeRepos(found);
     setStatus(`${found.length} repositórios sincronizados.`);
     setTimeout(() => setStatus(''), 2500);
@@ -179,53 +147,20 @@ async function syncAllPages() {
 }
 
 // ---------- Repositórios onde és colaborador ----------
-// A página do perfil só mostra os repositórios de que és dono. Os de colaboração vêm
-// da API (se houver token no painel lateral ⚙) ou, sem token, de github.com/settings/repositories.
-
-const RESERVED_OWNERS = new Set(['settings', 'orgs', 'organizations', 'users', 'notifications', 'marketplace',
-  'features', 'enterprise', 'sponsors', 'topics', 'collections', 'explore', 'pulls', 'issues', 'codespaces',
-  'login', 'logout', 'new', 'apps', 'account', 'dashboard', 'copilot', 'github-copilot', 'site', 'about',
-  'pricing', 'security', 'customer-stories', 'readme', 'team', 'trending', 'search', 'contact', 'blog', 'watching', 'stars']);
-
-function loggedInUser() {
-  return document.querySelector('meta[name="user-login"]')?.content || '';
-}
-
-function isOwnProfile() {
-  const me = loggedInUser().toLowerCase();
-  return !!me && me === profileOwner().toLowerCase();
-}
-
-async function scrapeCollabFromSettings(me) {
-  const res = await fetch('/settings/repositories', { credentials: 'include' });
-  if (!res.ok) throw new Error(`Erro ${res.status}`);
-  const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-  const root = doc.querySelector('main') || doc.body;
-  const names = new Map();
-  for (const a of root.querySelectorAll('a[href]')) {
-    const m = a.getAttribute('href').match(/^\/([\w.-]+)\/([\w.-]+)\/?$/);
-    if (!m || RESERVED_OWNERS.has(m[1].toLowerCase()) || m[1].toLowerCase() === me.toLowerCase()) continue;
-    const fullName = `${m[1]}/${m[2]}`;
-    names.set(fullName.toLowerCase(), { fullName });
-  }
-  return [...names.values()];
-}
+// A página do perfil só mostra os repositórios de que és dono; os de colaboração
+// vêm de github.com/settings/repositories.
 
 async function refreshCollaborations() {
-  if (loadingCollab || !isOwnProfile()) return;
+  if (loadingCollab) return;
   loadingCollab = true;
   try {
-    const me = loggedInUser();
-    const viaApi = await chrome.runtime.sendMessage({ type: 'fetchCollabRepos' });
-    const found = viaApi?.repos
-      ? viaApi.repos.filter((r) => !r.fullName.toLowerCase().startsWith(`${me.toLowerCase()}/`))
-      : await scrapeCollabFromSettings(me);
+    const found = await Session.fetchCollabRepos(state.login);
     await mergeRepos(found);
     state.collab = found.map((r) => r.fullName);
-    await chrome.storage.local.set({ collabRepos: state.collab });
+    await Session.save(state.login, { collabRepos: state.collab });
     scheduleRender();
   } catch (err) {
-    setStatus(`Não consegui obter as colaborações (${err.message}). Adiciona um token no painel lateral da extensão (⚙).`, true);
+    setStatus(`Não consegui obter as colaborações (${err.message}).`, true);
   } finally {
     loadingCollab = false;
   }
@@ -669,7 +604,7 @@ function buildColumnsMenu() {
         setColumns(box.checked ? [...state.columns, col.id] : state.columns.filter((id) => id !== col.id));
       });
       return el('label', { className: 'grf-menu-item' }, box, icon(col.icon), el('span', { textContent: col.label }),
-        col.api ? el('span', { className: 'grf-menu-tag', textContent: 'API', title: 'Vem da API do GitHub. Sem token: 60 pedidos por hora.' }) : null);
+        col.api ? el('span', { className: 'grf-menu-tag', textContent: 'API', title: 'Vem da API pública do GitHub (60 pedidos por hora).' }) : null);
     });
     const reset = el('button', { className: 'grf-menu-reset', type: 'button', textContent: 'Repor predefinição' });
     reset.addEventListener('click', () => {
@@ -869,11 +804,11 @@ function renderPanel() {
   const wide = total > 520;
   panel.classList.toggle('grf-wide', wide);
   panel.style.setProperty('--grf-cols', `minmax(0, 1fr) ${widths} 30px`);
-  panel.querySelector('.grf-readme-btn').hidden = !isOwnProfile() || state.folders.length === 0;
+  panel.querySelector('.grf-readme-btn').hidden = state.folders.length === 0;
 
   const container = panel.querySelector('.grf-folders');
   const nodes = FolderTree.children(state.folders).map(renderFolder);
-  if (isOwnProfile()) nodes.push(renderCollab());
+  nodes.push(renderCollab());
   container.replaceChildren(...nodes.filter(Boolean));
 
   if (nf === 0) {
@@ -888,7 +823,6 @@ function renderPanel() {
 
 // ---------- README do perfil ----------
 // Gera a secção a partir das pastas para copiar e colar no README de <user>/<user>.
-// Com token, também pode gravá-la diretamente.
 
 async function ask(message) {
   const res = await chrome.runtime.sendMessage(message);
@@ -896,15 +830,9 @@ async function ask(message) {
   return res;
 }
 
-// A data muda todos os dias; não conta para decidir se há alterações.
-function withoutDate(text) {
-  return text.replace(/<sub>Atualizado a [^<]*<\/sub>/, '');
-}
-
 async function openReadmeDialog() {
   const owner = loggedInUser();
-  const { readmeOptions = {}, settings } = await chrome.storage.local.get(['readmeOptions', 'settings']);
-  const canPublish = !!settings?.token; // gravar diretamente no repositório exige token; copiar não
+  const { readmeOptions = {} } = await chrome.storage.local.get('readmeOptions');
   let includePrivate = !!readmeOptions.includePrivate;
   let columns = readmeOptions.columns || ProfileReadme.DEFAULT_COLUMNS;
   const saveOptions = () => chrome.storage.local.set({ readmeOptions: { includePrivate, columns } });
@@ -920,8 +848,6 @@ async function openReadmeDialog() {
     return el('label', { className: 'grf-chip-toggle' }, box, el('span', { textContent: col.label }));
   });
   let section = '';
-  let current = null; // { text, sha } do README atual (só com token)
-  let next = null;
 
   const privateBox = el('input', { type: 'checkbox', checked: includePrivate });
   const preview = el('div', { className: 'grf-readme-preview markdown-body' });
@@ -930,10 +856,6 @@ async function openReadmeDialog() {
   const status = el('span', { className: 'grf-readme-status' });
   const openRepo = el('a', { className: 'grf-btn', href: `/${owner}/${owner}`, target: '_blank', textContent: 'Abrir repositório do README' });
   const copy = el('button', { className: 'grf-btn grf-btn-primary', type: 'button' }, icon('copy'), el('span', { textContent: 'Copiar Markdown' }));
-  const publish = canPublish
-    ? el('button', { className: 'grf-btn', type: 'button', disabled: true, title: 'Grava diretamente no README.md (usa o teu token)' },
-      icon('file'), el('span', { textContent: 'Publicar diretamente' }))
-    : null;
 
   const tabPreview = el('button', { className: 'grf-tab grf-tab-active', type: 'button', textContent: 'Pré-visualização' });
   const tabSource = el('button', { className: 'grf-tab', type: 'button', textContent: 'Markdown' });
@@ -961,7 +883,7 @@ async function openReadmeDialog() {
     el('div', { className: 'grf-dialog-columns' }, el('span', { className: 'grf-faint', textContent: 'Colunas:' }), ...chips),
     note,
     el('div', { className: 'grf-dialog-body' }, preview, source),
-    el('div', { className: 'grf-dialog-foot' }, status, openRepo, publish, copy));
+    el('div', { className: 'grf-dialog-foot' }, status, openRepo, copy));
 
   dialog.addEventListener('close', () => dialog.remove());
   document.body.append(dialog);
@@ -987,23 +909,12 @@ async function openReadmeDialog() {
     setNote('Copia e cola no README.md do repositório ' + `${owner}/${owner}` +
       '. Para atualizar mais tarde, substitui tudo o que está entre <!-- REPO-FOLDERS:START --> e <!-- REPO-FOLDERS:END -->.');
 
-    // Pré-visualização com o motor de Markdown do GitHub (não precisa de token).
+    // Pré-visualização com o motor de Markdown do GitHub.
     try {
       const { html } = await ask({ type: 'renderMarkdown', owner, text: section });
       preview.innerHTML = html; // HTML já sanitizado pela API do GitHub
     } catch {
       showTab(false);
-    }
-
-    if (!publish) return;
-    publish.disabled = true;
-    try {
-      current ??= await ask({ type: 'readmeGet', owner });
-      next = ProfileReadme.apply(current.text, section).text;
-      publish.disabled = withoutDate(next) === withoutDate(current.text);
-      if (publish.disabled) publish.title = 'O README já tem estas pastas';
-    } catch (err) {
-      publish.title = `Indisponível: ${err.message}`;
     }
   };
 
@@ -1028,30 +939,13 @@ async function openReadmeDialog() {
     refresh();
   });
 
-  publish?.addEventListener('click', async () => {
-    publish.disabled = true;
-    status.textContent = 'A publicar…';
-    try {
-      const { commitUrl } = await ask({ type: 'readmePut', owner, text: next, sha: current.sha });
-      status.textContent = '';
-      setNote('README atualizado ✓', 'grf-note-ok');
-      const commit = commitUrl ? el('a', { className: 'grf-btn', href: commitUrl, target: '_blank', textContent: 'Ver commit' }) : null;
-      publish.replaceWith(...[commit].filter(Boolean));
-    } catch (err) {
-      status.textContent = '';
-      setNote(`Não foi possível publicar: ${err.message}.`, 'grf-note-error');
-      current = null; // volta a ler o README (pode ter mudado entretanto)
-      refresh();
-    }
-  });
-
   refresh();
 }
 
 // Repositórios que já estão numa pasta só aparecem dentro dela (no painel);
 // os restantes ficam na lista nativa com arrastar + menu de pasta.
 function decorateList() {
-  for (const { li, repo } of scrapeItems(document)) {
+  for (const { li, repo } of Session.parseRepoList(document)) {
     if (!li.dataset.grf) {
       li.dataset.grf = '1';
       makeDraggable(li, repo.fullName);
@@ -1066,7 +960,7 @@ function decorateList() {
 }
 
 function render() {
-  if (!document.getElementById('user-repositories-list')) return;
+  if (!document.getElementById('user-repositories-list') || !isOwnProfile()) return;
   if (document.querySelector('#grf-panel .grf-rename')) return; // não interromper a edição de um nome
   renderPanel();
   decorateList();
@@ -1085,27 +979,34 @@ function scheduleRender() {
 // ---------- Arranque ----------
 // O GitHub navega sem recarregar a página (Turbo), por isso observamos o DOM.
 
+// Avisa o painel lateral de qual é a conta com sessão iniciada (troca de conta = troca de pastas).
+const pageLogin = Session.loginIn(document);
+const accountReady = pageLogin === null ? Promise.resolve() : Session.setAccount(pageLogin);
+
 let lastListEl = null;
+let mounted = false;
 
 async function mountIfNeeded() {
   const list = document.getElementById('user-repositories-list');
   if (!list || list === lastListEl) return;
   lastListEl = list;
+  mounted = isOwnProfile(); // só na lista de repositórios da própria conta
+  if (!mounted) return;
+  await accountReady;
   await load();
   render();
 
-  const onPage = scrapeItems(document).map((x) => x.repo);
+  const onPage = Session.parseRepoList(document).map((x) => x.repo);
   await mergeRepos(onPage);
   scheduleRender();
   const owner = profileOwner().toLowerCase();
-  const hasMorePages = document.querySelector('.paginate-container a[rel="next"], a.next_page');
   const knownForOwner = state.repos.filter((r) => r.fullName.toLowerCase().startsWith(`${owner}/`)).length;
-  if (hasMorePages && knownForOwner <= onPage.length) syncAllPages();
+  if (Session.nextPage(document) && knownForOwner <= onPage.length) syncAllPages();
   refreshCollaborations();
 }
 
 chrome.storage.onChanged.addListener(async (changes, area) => {
-  if (area !== 'local' || !['folders', 'repos', 'collabRepos'].some((k) => k in changes)) return;
+  if (area !== 'local' || !mounted || !Session.changed(state.login, changes)) return;
   if (document.querySelector('#grf-panel .grf-rename')) return;
   await load();
   scheduleRender();
@@ -1115,6 +1016,6 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
 // os itens novos ainda não têm arrastar nem menu de pasta.
 new MutationObserver(() => {
   mountIfNeeded();
-  if (lastListEl && document.querySelector('#user-repositories-list li[itemprop~="owns"]:not([data-grf])')) scheduleRender();
+  if (mounted && document.querySelector('#user-repositories-list li[itemprop~="owns"]:not([data-grf])')) scheduleRender();
 }).observe(document.documentElement, { childList: true, subtree: true });
 mountIfNeeded();

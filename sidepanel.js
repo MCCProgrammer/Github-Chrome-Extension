@@ -1,8 +1,9 @@
-// Estado guardado em chrome.storage.local (partilhado com a página do GitHub, content.js):
-//   settings: { username, token }
-//   folders:  [{ id, name, collapsed, repos: ["owner/name", ...], parentId, color }]
-//   repos:    cache dos repositórios (API + página do perfil)
-//   unsortedCollapsed: boolean
+// Estado guardado em chrome.storage.local, por conta (ver github-session.js) e partilhado
+// com a página do GitHub (content.js):
+//   account:            login com sessão iniciada no github.com ('' = sem sessão)
+//   folders@<login>:    [{ id, name, collapsed, repos: ["owner/name", ...], parentId, color }]
+//   repos@<login>:      cache dos repositórios lidos das páginas do GitHub
+//   unsortedCollapsed@<login>: boolean
 const UNSORTED = '__unsorted__';
 const FOLDER_COLORS = ['#4493f8', '#3fb950', '#a371f7', '#f0883e', '#db61a2', '#d29922', '#39c5cf', '#f85149'];
 const LANGUAGE_COLORS = {
@@ -14,7 +15,7 @@ const LANGUAGE_COLORS = {
 };
 
 const state = {
-  settings: { username: '', token: '' },
+  login: null, // null = ainda a detetar
   folders: [],
   repos: [],
   unsortedCollapsed: false,
@@ -72,9 +73,10 @@ function iconButton(name, title, onClick, extraClass = '') {
 // ---------- Armazenamento ----------
 
 async function load() {
-  const data = await chrome.storage.local.get(['settings', 'folders', 'repos', 'unsortedCollapsed']);
+  const { account } = await chrome.storage.local.get('account');
+  state.login = account ?? null;
+  const data = state.login ? await Session.load(state.login) : {};
   Object.assign(state, {
-    settings: data.settings || state.settings,
     folders: data.folders || [],
     repos: data.repos || [],
     unsortedCollapsed: !!data.unsortedCollapsed,
@@ -82,7 +84,7 @@ async function load() {
 }
 
 function save() {
-  return chrome.storage.local.set({
+  return Session.save(state.login, {
     folders: state.folders,
     unsortedCollapsed: state.unsortedCollapsed,
   });
@@ -102,64 +104,46 @@ function mergeRepos(found) {
     byName.set(key, { ...byName.get(key), ...defined });
   }
   state.repos = [...byName.values()];
-  return chrome.storage.local.set({ repos: state.repos });
+  return Session.save(state.login, { repos: state.repos });
 }
 
-// ---------- API do GitHub ----------
+// ---------- Conta e repositórios (lidos do github.com com a sessão) ----------
 
-async function fetchRepos() {
-  const { username, token } = state.settings;
-  if (!username && !token) {
-    setStatus('Define o teu utilizador GitHub nas definições para carregar os repositórios.');
-    toggleSettings(true);
+// Vê no github.com qual é a conta com sessão iniciada; se mudou, carrega as pastas dessa conta.
+async function detectAccount() {
+  let login;
+  try {
+    login = await Session.detectLogin();
+  } catch {
+    if (state.login === null) setStatus('Não consegui contactar o GitHub.', true);
     return;
   }
+  await Session.setAccount(login); // o listener do storage trata da mudança
+  if (login === state.login && login && state.repos.length === 0) fetchRepos();
+}
 
+let fetching = false;
+async function fetchRepos() {
+  if (!state.login || fetching) return;
+  fetching = true;
+  const login = state.login;
   setStatus('A carregar repositórios…');
   $('refreshBtn').classList.add('spin');
-  const headers = { Accept: 'application/vnd.github+json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const base = token
-    ? 'https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&sort=updated'
-    : `https://api.github.com/users/${encodeURIComponent(username)}/repos?type=owner&sort=updated`;
-
-  const all = [];
   try {
-    for (let page = 1; ; page++) {
-      const res = await fetch(`${base}&per_page=100&page=${page}`, { headers });
-      if (!res.ok) {
-        const msg = res.status === 401 ? 'Token inválido.'
-          : res.status === 404 ? 'Utilizador não encontrado.'
-          : res.status === 403 ? 'Limite da API atingido — adiciona um token.'
-          : `Erro ${res.status}.`;
-        throw new Error(msg);
-      }
-      const batch = await res.json();
-      all.push(...batch);
-      if (batch.length < 100) break;
-    }
+    const own = await Session.fetchOwnRepos(login, (n) => setStatus(`A carregar repositórios… ${n}`));
+    const collab = await Session.fetchCollabRepos(login).catch(() => []);
+    if (login !== state.login) return; // trocou de conta entretanto
+    await mergeRepos([...own, ...collab]);
+    await Session.save(login, { collabRepos: collab.map((r) => r.fullName) });
+    setStatus(`${own.length + collab.length} repositórios carregados.`);
+    setTimeout(() => setStatus(''), 2500);
+    render();
   } catch (err) {
-    setStatus(err.message, true);
-    return;
+    setStatus(`Não consegui ler os repositórios (${err.message}).`, true);
   } finally {
+    fetching = false;
     $('refreshBtn').classList.remove('spin');
   }
-
-  await mergeRepos(all.map((r) => ({
-    fullName: r.full_name,
-    description: r.description || '',
-    private: r.private,
-    fork: r.fork,
-    archived: r.archived,
-    language: r.language || '',
-    updatedAt: r.pushed_at || r.updated_at,
-    stars: r.stargazers_count,
-    forks: r.forks_count,
-  })));
-  setStatus(`${all.length} repositórios carregados.`);
-  setTimeout(() => setStatus(''), 2500);
-  render();
 }
 
 // ---------- Operações sobre pastas ----------
@@ -325,6 +309,17 @@ function languageBar(repoNames) {
 function render() {
   if (document.querySelector('.folder-head input')) return; // não interromper a edição de um nome
   const container = $('folders');
+  const signedIn = !!state.login;
+  for (const id of ['toolbar', 'refreshBtn', 'settingsBtn', 'footer']) $(id).hidden = !signedIn;
+  if (!signedIn) {
+    $('settings').hidden = true;
+    $('subtitle').textContent = state.login === null ? 'A detetar a conta…' : 'Sem sessão iniciada';
+    container.replaceChildren(state.login === null ? '' : el('div', { className: 'blankslate signed-out' }, icon('lock'),
+      el('h3', { textContent: 'Inicia sessão no GitHub' }),
+      el('p', { textContent: 'A extensão usa a conta com sessão iniciada no github.com. Cada conta tem as suas pastas.' }),
+      el('a', { className: 'btn btn-primary', href: 'https://github.com/login', target: '_blank', rel: 'noopener', textContent: 'Iniciar sessão' })));
+    return;
+  }
 
   const unsorted = state.repos.map((r) => r.fullName).filter((n) => !folderOf(n));
   // Permite organizar também o repositório aberto no separador, mesmo que não seja teu.
@@ -462,7 +457,7 @@ function moveSelect(fullName, currentId) {
 function renderRepo(fullName, folderId) {
   const repo = findRepo(fullName) || { fullName };
   const [owner, name] = fullName.split('/');
-  const isMine = owner.toLowerCase() === state.settings.username.toLowerCase();
+  const isMine = owner.toLowerCase() === state.login.toLowerCase();
 
   const link = el('a', { className: 'repo-link', href: `https://github.com/${fullName}`, target: '_blank', rel: 'noopener', title: fullName },
     isMine ? null : el('span', { className: 'owner', textContent: `${owner} / ` }), name);
@@ -519,38 +514,27 @@ async function detectCurrentRepo() {
 // ---------- Cabeçalho / definições / exportar / importar ----------
 
 function renderProfile() {
-  const { username } = state.settings;
-  $('profileLink').hidden = !username;
-  if (username) {
-    $('profileLink').href = `https://github.com/${encodeURIComponent(username)}`;
-    $('profileLink').title = username;
-    $('avatar').src = `https://github.com/${encodeURIComponent(username)}.png?size=48`;
+  const login = state.login;
+  $('profileLink').hidden = !login;
+  if (login) {
+    const avatar = `https://github.com/${encodeURIComponent(login)}.png?size=96`;
+    $('profileLink').href = `https://github.com/${encodeURIComponent(login)}`;
+    $('profileLink').title = login;
+    $('avatar').src = avatar;
+    $('accountAvatar').src = avatar;
+    $('accountLogin').textContent = login;
   }
-  $('openRepos').href = username ? `https://github.com/${encodeURIComponent(username)}?tab=repositories` : 'https://github.com/';
+  $('openRepos').href = login ? `https://github.com/${encodeURIComponent(login)}?tab=repositories` : 'https://github.com/';
 }
 
 function toggleSettings(force) {
   const open = force ?? $('settings').hidden;
   $('settings').hidden = !open;
   $('settingsBtn').classList.toggle('active', open);
-  if (open) $('usernameInput').focus();
 }
 
 function bindSettings() {
   $('settingsBtn').addEventListener('click', () => toggleSettings());
-  $('usernameInput').value = state.settings.username;
-  $('tokenInput').value = state.settings.token;
-
-  $('saveSettingsBtn').addEventListener('click', async () => {
-    state.settings = {
-      username: $('usernameInput').value.trim(),
-      token: $('tokenInput').value.trim(),
-    };
-    await chrome.storage.local.set({ settings: state.settings });
-    toggleSettings(false);
-    renderProfile();
-    fetchRepos();
-  });
 
   $('exportBtn').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({ folders: state.folders }, null, 2)], { type: 'application/json' });
@@ -604,12 +588,16 @@ async function init() {
     render();
   });
 
-  // Mantém-se sincronizado com as alterações feitas na página do GitHub.
+  // Mantém-se sincronizado com a página do GitHub, incluindo trocas de conta
+  // (a página regista a conta com sessão iniciada sempre que é aberta).
   chrome.storage.onChanged.addListener(async (changes, area) => {
-    if (area !== 'local' || !['folders', 'repos', 'settings'].some((k) => k in changes)) return;
+    if (area !== 'local') return;
+    const switched = 'account' in changes;
+    if (!switched && !(state.login && Session.changed(state.login, changes))) return;
     await load();
     renderProfile();
     render();
+    if (switched && state.login && state.repos.length === 0) fetchRepos();
   });
 
   chrome.tabs.onActivated.addListener(detectCurrentRepo);
@@ -618,7 +606,9 @@ async function init() {
   renderProfile();
   render();
   detectCurrentRepo();
-  if (state.repos.length === 0) fetchRepos();
+  detectAccount();
+  // Ao voltar ao painel (ex.: depois de trocar de conta noutro separador), confirma a conta.
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && detectAccount());
 }
 
 init();

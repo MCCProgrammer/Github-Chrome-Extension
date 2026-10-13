@@ -21,31 +21,26 @@
 
   <section id="settings" class="settings" hidden>
     <div class="box">
-      <div class="box-header">Definições</div>
+      <div class="box-header">Conta</div>
       <div class="box-body">
-        <label class="field">
-          <span class="field-label">Utilizador GitHub</span>
-          <input id="usernameInput" class="input" type="text" placeholder="ex: octocat" autocomplete="off" spellcheck="false">
-        </label>
-        <label class="field">
-          <span class="field-label">Personal access token <span class="muted">(opcional)</span></span>
-          <input id="tokenInput" class="input" type="password" placeholder="github_pat_…" autocomplete="off">
-          <span class="field-hint">Necessário para repositórios privados, colaborações e publicar no README do perfil.
-            Cria-o em <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Settings → Developer settings</a>.
-            Fica guardado apenas neste browser.</span>
-        </label>
+        <div class="account">
+          <img id="accountAvatar" class="avatar avatar-lg" alt="">
+          <div class="account-info">
+            <strong id="accountLogin"></strong>
+            <span class="field-hint">Detetada automaticamente a partir da sessão iniciada no GitHub.
+              Para usar outra conta, troca de conta no GitHub: cada conta tem as suas pastas.</span>
+          </div>
+        </div>
         <div class="actions">
-          <button id="saveSettingsBtn" class="btn btn-primary" type="button">Guardar</button>
-          <span class="spacer"></span>
-          <button id="exportBtn" class="btn" type="button">Exportar</button>
-          <button id="importBtn" class="btn" type="button">Importar</button>
+          <button id="exportBtn" class="btn" type="button">Exportar pastas</button>
+          <button id="importBtn" class="btn" type="button">Importar pastas</button>
           <input id="importFile" type="file" accept="application/json" hidden>
         </div>
       </div>
     </div>
   </section>
 
-  <div class="toolbar">
+  <div id="toolbar" class="toolbar">
     <label class="search">
       <span id="searchIcon"></span>
       <input id="searchInput" type="search" placeholder="Procurar repositórios…" autocomplete="off">
@@ -56,11 +51,12 @@
   <div id="status" class="flash" hidden></div>
   <main id="folders"></main>
 
-  <footer class="app-footer">
+  <footer id="footer" class="app-footer">
     <a id="openRepos" target="_blank" rel="noopener">Abrir os meus repositórios no GitHub ↗</a>
   </footer>
 
   <script src="folders-core.js"></script>
+  <script src="github-session.js"></script>
   <script src="sidepanel.js"></script>
 </body>
 </html>
