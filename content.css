@@ -1,0 +1,58 @@
+/* Usa as variáveis do Primer (GitHub), por isso segue o tema claro/escuro do site. */
+#grf-panel .grf-header { gap: 8px; }
+#grf-panel .grf-status:not(:empty) { padding: 6px 16px; border-bottom: 1px solid var(--borderColor-muted, #d1d9e0b3); }
+#grf-panel .grf-folders { padding: 8px; display: grid; gap: 8px; }
+#grf-panel > .grf-folders > .grf-empty { padding: 8px; }
+
+.grf-folder {
+  border: 1px solid var(--borderColor-default, #d1d9e0);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.grf-folder-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bgColor-muted, #f6f8fa);
+  font-weight: 600;
+}
+.grf-folder-name { cursor: text; }
+.grf-toggle { width: 18px; }
+.grf-actions { margin-left: auto; display: flex; gap: 2px; opacity: 0; transition: opacity .1s; }
+.grf-folder-head:hover .grf-actions { opacity: 1; }
+.grf-rename { width: 220px; }
+.grf-collapsed .grf-repos { display: none; }
+
+.grf-repos { list-style: none; margin: 0; padding: 0; }
+.grf-repo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 34px;
+  border-top: 1px solid var(--borderColor-muted, #d1d9e0b3);
+  cursor: grab;
+}
+.grf-repo > a { font-weight: 600; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grf-repo .grf-move { margin-left: auto; }
+.grf-repo:hover { background: var(--bgColor-muted, #f6f8fa); }
+.grf-folder .grf-empty { padding: 8px 10px 8px 34px; border-top: 1px solid var(--borderColor-muted, #d1d9e0b3); font-size: 12px; }
+
+.grf-drop {
+  outline: 2px dashed var(--borderColor-success-emphasis, #1f883d);
+  outline-offset: -2px;
+  background: var(--bgColor-success-muted, #dafbe1);
+}
+.grf-dragging { opacity: .4; }
+
+/* Itens da lista nativa */
+#user-repositories-list li[data-grf] { cursor: grab; }
+.grf-item-bar { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; vertical-align: middle; }
+.grf-move { font-size: 12px; font-weight: 400; padding-top: 0; padding-bottom: 0; max-width: 170px; }
+
+/* Subpastas */
+.grf-folder-head { cursor: grab; }
+.grf-children { padding: 0 8px 0 24px; }
+.grf-children:not(:empty) { padding-top: 8px; padding-bottom: 8px; display: grid; gap: 8px; border-top: 1px solid var(--borderColor-muted, #d1d9e0b3); }
+.grf-collapsed .grf-children { display: none; }
+#grf-panel .grf-folders.grf-drop { outline-offset: 2px; }

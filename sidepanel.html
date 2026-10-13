@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>GitHub Repo Folders</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header>
+    <h1>📁 Repo Folders</h1>
+    <div class="header-actions">
+      <button id="refreshBtn" title="Atualizar repositórios">⟳</button>
+      <button id="settingsBtn" title="Definições">⚙</button>
+    </div>
+  </header>
+
+  <section id="settings" class="settings hidden">
+    <label>Utilizador GitHub
+      <input id="usernameInput" type="text" placeholder="ex: octocat" autocomplete="off">
+    </label>
+    <label>Token (opcional — necessário para repos privados)
+      <input id="tokenInput" type="password" placeholder="ghp_..." autocomplete="off">
+    </label>
+    <p class="hint">Cria um token em GitHub → Settings → Developer settings → Personal access tokens, com permissão de leitura de repositórios. Fica guardado apenas neste browser.</p>
+    <div class="row">
+      <button id="saveSettingsBtn" class="primary">Guardar</button>
+      <button id="exportBtn">Exportar pastas</button>
+      <button id="importBtn">Importar pastas</button>
+      <input id="importFile" type="file" accept="application/json" hidden>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <input id="searchInput" type="search" placeholder="Pesquisar repositórios…">
+    <button id="newFolderBtn" class="primary" title="Nova pasta">+ Pasta</button>
+  </div>
+
+  <div id="status" class="status"></div>
+  <main id="folders"></main>
+
+  <template id="folderTpl">
+    <section class="folder">
+      <div class="folder-head">
+        <button class="toggle" title="Expandir/recolher">▾</button>
+        <span class="folder-name"></span>
+        <span class="count"></span>
+        <span class="folder-actions">
+          <button class="add-sub" title="Nova subpasta">+📁</button>
+          <button class="rename" title="Mudar nome">✎</button>
+          <button class="delete" title="Apagar pasta">🗑</button>
+        </span>
+      </div>
+      <div class="children"></div>
+      <ul class="repos"></ul>
+    </section>
+  </template>
+
+  <template id="repoTpl">
+    <li class="repo" draggable="true">
+      <a class="repo-link" target="_blank" rel="noopener"></a>
+      <span class="badges"></span>
+      <select class="move" title="Mover para pasta"></select>
+    </li>
+  </template>
+
+  <script src="folders-core.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
