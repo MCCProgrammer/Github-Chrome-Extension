@@ -80,6 +80,7 @@ async function load() {
     folders: data.folders || [],
     repos: data.repos || [],
     unsortedCollapsed: !!data.unsortedCollapsed,
+    syncedAt: data.syncedAt,
   });
 }
 
@@ -119,7 +120,7 @@ async function detectAccount() {
     return;
   }
   await Session.setAccount(login); // the storage listener handles the switch
-  if (login === state.login && login && state.repos.length === 0) fetchRepos();
+  if (login === state.login && login && Session.isStale(state.syncedAt)) fetchRepos();
 }
 
 let fetching = false;
@@ -134,7 +135,7 @@ async function fetchRepos() {
     const collab = await Session.fetchCollabRepos(login).catch(() => []);
     if (login !== state.login) return; // account switched in the meantime
     await mergeRepos([...own, ...collab]);
-    await Session.save(login, { collabRepos: collab.map((r) => r.fullName) });
+    await Session.save(login, { collabRepos: collab.map((r) => r.fullName), syncedAt: Date.now() });
     setStatus(`${own.length + collab.length} repositories loaded.`);
     setTimeout(() => setStatus(''), 2500);
     render();
@@ -597,7 +598,7 @@ async function init() {
     await load();
     renderProfile();
     render();
-    if (switched && state.login && state.repos.length === 0) fetchRepos();
+    if (switched && state.login && Session.isStale(state.syncedAt)) fetchRepos();
   });
 
   chrome.tabs.onActivated.addListener(detectCurrentRepo);

@@ -89,6 +89,7 @@ async function load() {
   state.repos = d.repos || [];
   state.collab = d.collabRepos || [];
   state.collabCollapsed = !!d.collabCollapsed;
+  state.syncedAt = d.syncedAt;
   // What's in memory is newer (saving metadata is debounced).
   state.meta = { ...(d.repoMeta || {}), ...state.meta };
 }
@@ -137,6 +138,7 @@ async function syncAllPages() {
   try {
     const found = await Session.fetchOwnRepos(state.login, (n) => setStatus(`Reading all pages… ${n} repositories`));
     await mergeRepos(found);
+    await Session.save(state.login, { syncedAt: Date.now() });
     setStatus(`${found.length} repositories synced.`);
     setTimeout(() => setStatus(''), 2500);
   } catch (err) {
@@ -1001,7 +1003,8 @@ async function mountIfNeeded() {
   scheduleRender();
   const owner = profileOwner().toLowerCase();
   const knownForOwner = state.repos.filter((r) => r.fullName.toLowerCase().startsWith(`${owner}/`)).length;
-  if (Session.nextPage(document) && knownForOwner <= onPage.length) syncAllPages();
+  // Repos on other pages only get fresh details (e.g. a new description) from a full sync.
+  if (Session.nextPage(document) && (knownForOwner <= onPage.length || Session.isStale(state.syncedAt))) syncAllPages();
   refreshCollaborations();
 }
 

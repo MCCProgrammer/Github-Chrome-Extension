@@ -7,7 +7,14 @@
 const GITHUB = 'https://github.com';
 
 const Session = {
-  ACCOUNT_KEYS: ['folders', 'repos', 'collabRepos', 'collabCollapsed', 'unsortedCollapsed'],
+  ACCOUNT_KEYS: ['folders', 'repos', 'collabRepos', 'collabCollapsed', 'unsortedCollapsed', 'syncedAt'],
+
+  // Cached repository details (description, stars…) are re-read from GitHub when older than this.
+  REPOS_TTL: 30 * 60 * 1000,
+
+  isStale(syncedAt) {
+    return !syncedAt || Date.now() - syncedAt > this.REPOS_TTL;
+  },
 
   key(login, name) {
     return `${name}@${login.toLowerCase()}`;
