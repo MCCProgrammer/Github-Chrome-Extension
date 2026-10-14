@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GitHub Repo Folders",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "description": "Organize your GitHub repositories into folders and subfolders, right on your profile and in a side panel.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq81Gj2K5sUE5B9L8yBGArZ79kiUo9JUgF8o0tRL6qvFrvkwIVErLtbXpPniWN12SXAs/qbWP0nWxa3UqtnMmSsIwhnk+7/ymRolDeE0UgNFJCfQkz9Zq0r2TPfJ+NDe8iJG7BahYPLZ1P+9c4BQJSqtdUrzNfKtU9rRFgXvkucI8HNBvIEvrqoQ4TUVuORbQ4XQ0wmqy/bNF4mSHlx9dttd3Io81H5yEbdbQ9Rjt9XHmTAS8fk5AvEu18Oq4grilqaXI/brNbDjoqeNwYnt5QLnxz/6OYhA0anIst1YHm9MMmHGiRcrIUJBzzkkrchehDbEJB/E1Av12lIvmYC1qpwIDAQAB",
   "permissions": [

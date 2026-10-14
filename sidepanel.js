@@ -134,6 +134,14 @@ async function fetchRepos() {
     const own = await Session.fetchOwnRepos(login, (n) => setStatus(`Loading repositories… ${n}`));
     const collab = await Session.fetchCollabRepos(login).catch(() => []);
     if (login !== state.login) return; // account switched in the meantime
+    if (own.length) {
+      const pruned = Session.pruneOwnRepos(login, state.repos, state.folders, own);
+      if (pruned.removed) {
+        state.repos = pruned.repos;
+        state.folders = pruned.folders;
+        await save();
+      }
+    }
     await mergeRepos([...own, ...collab]);
     await Session.save(login, { collabRepos: collab.map((r) => r.fullName), syncedAt: Date.now() });
     setStatus(`${own.length + collab.length} repositories loaded.`);

@@ -158,6 +158,19 @@ const Session = {
     return doc.querySelector('.paginate-container a[rel="next"], a.next_page')?.getAttribute('href');
   },
 
+  // After reading the account's whole list: forgets its repositories that no longer exist
+  // (deleted, or renamed) in the cache and in the folders. Other people's repositories are kept.
+  pruneOwnRepos(login, repos, folders, found) {
+    const prefix = `${login.toLowerCase()}/`;
+    const alive = new Set(found.map((r) => r.fullName.toLowerCase()));
+    const gone = (name) => name.toLowerCase().startsWith(prefix) && !alive.has(name.toLowerCase());
+    return {
+      repos: repos.filter((r) => !gone(r.fullName)),
+      folders: folders.map((f) => ({ ...f, repos: f.repos.filter((n) => !gone(n)) })),
+      removed: repos.filter((r) => gone(r.fullName)).length,
+    };
+  },
+
   // Walks every page of the account's repository list.
   async fetchOwnRepos(login, onProgress = () => {}) {
     const found = [];

@@ -137,7 +137,16 @@ async function syncAllPages() {
   setStatus('Reading all pages…');
   try {
     const found = await Session.fetchOwnRepos(state.login, (n) => setStatus(`Reading all pages… ${n} repositories`));
+    if (found.length) {
+      const pruned = Session.pruneOwnRepos(state.login, state.repos, state.folders, found);
+      if (pruned.removed) {
+        state.repos = pruned.repos;
+        state.folders = pruned.folders;
+        await save();
+      }
+    }
     await mergeRepos(found);
+    scheduleRender();
     await Session.save(state.login, { syncedAt: Date.now() });
     setStatus(`${found.length} repositories synced.`);
     setTimeout(() => setStatus(''), 2500);
