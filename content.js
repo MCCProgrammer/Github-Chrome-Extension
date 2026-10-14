@@ -35,7 +35,7 @@ const PANEL_COLUMNS = [
 const COLUMN_BY_ID = Object.fromEntries(PANEL_COLUMNS.map((c) => [c.id, c]));
 const DEFAULT_COLUMNS = ['description', 'language', 'contributors', 'updated', 'stars'];
 
-const state = { login: '', folders: [], repos: [], collab: [], collabCollapsed: false, meta: {}, query: '', columns: DEFAULT_COLUMNS };
+const state = { login: '', folders: [], repos: [], collab: [], collabCollapsed: false, meta: {}, query: '', columns: DEFAULT_COLUMNS, showLanguageBar: true };
 let syncing = false;
 let loadingCollab = false;
 
@@ -83,8 +83,9 @@ function icon(name, className = '') {
 
 async function load() {
   state.login = loggedInUser();
-  const d = await Session.load(state.login, ['repoMeta', 'panelColumns']);
+  const d = await Session.load(state.login, ['repoMeta', 'panelColumns', 'showLanguageBar']);
   state.columns = d.panelColumns || DEFAULT_COLUMNS;
+  state.showLanguageBar = d.showLanguageBar !== false;
   state.folders = d.folders || [];
   state.repos = d.repos || [];
   state.collab = d.collabRepos || [];
@@ -622,7 +623,15 @@ function buildColumnsMenu() {
       setColumns(DEFAULT_COLUMNS);
       fill();
     });
-    menu.replaceChildren(el('div', { className: 'grf-menu-title', textContent: 'Visible columns' }), ...items, reset);
+    const barBox = el('input', { type: 'checkbox', checked: state.showLanguageBar });
+    barBox.addEventListener('change', () => {
+      state.showLanguageBar = barBox.checked;
+      chrome.storage.local.set({ showLanguageBar: state.showLanguageBar });
+      render();
+    });
+    const barItem = el('label', { className: 'grf-menu-item' }, barBox, icon('droplet'), el('span', { textContent: 'Language bar under folders' }));
+    menu.replaceChildren(el('div', { className: 'grf-menu-title', textContent: 'Visible columns' }), ...items,
+      el('div', { className: 'grf-menu-title', textContent: 'Display' }), barItem, reset);
   };
 
   btn.addEventListener('click', (e) => {
@@ -636,8 +645,9 @@ function buildColumnsMenu() {
   return wrap;
 }
 
-// Thin bar with the language breakdown inside the folder.
+// Thin bar with the language breakdown inside the folder (can be turned off in the Columns menu).
 function languageBar(repoNames) {
+  if (!state.showLanguageBar) return null;
   const counts = new Map();
   for (const n of repoNames) {
     const repo = findRepo(n);
@@ -1066,7 +1076,8 @@ async function mountIfNeeded() {
 }
 
 chrome.storage.onChanged.addListener(async (changes, area) => {
-  if ((area !== 'local' && area !== 'sync') || !mounted || !Session.changed(state.login, changes, area)) return;
+  if ((area !== 'local' && area !== 'sync') || !mounted) return;
+  if (!Session.changed(state.login, changes, area) && !('showLanguageBar' in changes)) return;
   if (document.querySelector('#grf-panel .grf-rename')) return;
   await load();
   scheduleRender();

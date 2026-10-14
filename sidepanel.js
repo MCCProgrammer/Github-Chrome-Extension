@@ -21,6 +21,7 @@ const state = {
   unsortedCollapsed: false,
   query: '',
   currentRepo: null,
+  showLanguageBar: true,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -73,7 +74,8 @@ function iconButton(name, title, onClick, extraClass = '') {
 // ---------- Storage ----------
 
 async function load() {
-  const { account } = await chrome.storage.local.get('account');
+  const { account, showLanguageBar } = await chrome.storage.local.get(['account', 'showLanguageBar']);
+  state.showLanguageBar = showLanguageBar !== false;
   state.login = account ?? null;
   const data = state.login ? await Session.load(state.login) : {};
   Object.assign(state, {
@@ -294,6 +296,7 @@ function makeDropTarget(node, folderId) {
 }
 
 function languageBar(repoNames) {
+  if (!state.showLanguageBar) return null;
   const counts = new Map();
   for (const n of repoNames) {
     const repo = findRepo(n);
@@ -545,6 +548,13 @@ function toggleSettings(force) {
 function bindSettings() {
   $('settingsBtn').addEventListener('click', () => toggleSettings());
 
+  $('langBarToggle').checked = state.showLanguageBar;
+  $('langBarToggle').addEventListener('change', (e) => {
+    state.showLanguageBar = e.target.checked;
+    chrome.storage.local.set({ showLanguageBar: state.showLanguageBar });
+    render();
+  });
+
   $('exportBtn').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({ folders: state.folders }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -602,8 +612,10 @@ async function init() {
   chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area !== 'local' && area !== 'sync') return;
     const switched = 'account' in changes;
-    if (!switched && !(state.login && Session.changed(state.login, changes, area))) return;
+    const display = 'showLanguageBar' in changes;
+    if (!switched && !display && !(state.login && Session.changed(state.login, changes, area))) return;
     await load();
+    $('langBarToggle').checked = state.showLanguageBar;
     renderProfile();
     render();
     if (switched && state.login && Session.isStale(state.syncedAt)) fetchRepos();
