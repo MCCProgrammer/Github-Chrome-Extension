@@ -970,11 +970,53 @@ function decorateList() {
   }
 }
 
+// When every repository on this page is already in a folder, the native list looks empty.
+// Go to the first page (same sort and filters) that still has unorganized repositories,
+// or back to the first page when they are all organized.
+let jumpCheckedFor = '';
+async function jumpToUnorganizedPage() {
+  const url = new URL(location.href);
+  if (url.searchParams.get('q')) return; // searching: keep the results
+  const items = Session.parseRepoList(document);
+  if (!items.length || items.some(({ repo }) => !folderOf(repo.fullName))) return;
+  if (jumpCheckedFor === url.href) return;
+  jumpCheckedFor = url.href;
+
+  const current = Number(url.searchParams.get('page')) || 1;
+  const goTo = (page) => {
+    if (page === 1) url.searchParams.delete('page');
+    else url.searchParams.set('page', page);
+    location.assign(url.href);
+  };
+  setStatus('Looking for repositories to organize…');
+  try {
+    const first = new URL(url.href);
+    first.searchParams.delete('page');
+    let path = first.pathname + first.search;
+    for (let page = 1; path && page <= 50; page++) {
+      const doc = page === current ? document : await Session.fetchDoc(path);
+      const repos = Session.parseRepoList(doc).map((x) => x.repo);
+      if (page !== current) await mergeRepos(repos);
+      if (repos.some((r) => !folderOf(r.fullName))) {
+        if (page !== current) goTo(page);
+        return;
+      }
+      path = Session.nextPage(doc);
+    }
+    if (current !== 1) goTo(1);
+  } catch {
+    // Couldn't read the other pages: stay here.
+  } finally {
+    setStatus('');
+  }
+}
+
 function render() {
   if (!document.getElementById('user-repositories-list') || !isOwnProfile()) return;
   if (document.querySelector('#grf-panel .grf-rename')) return; // don't interrupt a rename
   renderPanel();
   decorateList();
+  jumpToUnorganizedPage();
 }
 
 let renderQueued = false;
@@ -1008,12 +1050,18 @@ async function mountIfNeeded() {
   render();
 
   const onPage = Session.parseRepoList(document).map((x) => x.repo);
+  // A repository on this page is new, or was archived or had its visibility changed since the
+  // last sync: the other pages have probably changed too.
+  const changed = onPage.some((r) => {
+    const known = findRepo(r.fullName);
+    return !known || !!known.archived !== r.archived || !!known.private !== r.private;
+  });
   await mergeRepos(onPage);
   scheduleRender();
   const owner = profileOwner().toLowerCase();
   const knownForOwner = state.repos.filter((r) => r.fullName.toLowerCase().startsWith(`${owner}/`)).length;
   // Repos on other pages only get fresh details (e.g. a new description) from a full sync.
-  if (Session.nextPage(document) && (knownForOwner <= onPage.length || Session.isStale(state.syncedAt))) syncAllPages();
+  if (Session.nextPage(document) && (changed || knownForOwner <= onPage.length || Session.isStale(state.syncedAt))) syncAllPages();
   refreshCollaborations();
 }
 
