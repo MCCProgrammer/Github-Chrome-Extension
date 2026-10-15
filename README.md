@@ -221,7 +221,7 @@ No dependencies and no build step: plain JavaScript loaded directly by Chrome. T
 
 ## Contributing
 
-Suggestions and pull requests are welcome. Open an [issue](https://github.com/MCCProgrammer/Github-Chrome-Extension/issues) to report a bug or propose an idea.
+Suggestions and pull requests are welcome. Open an [issue](https://github.com/MCCProgrammer/Github-Chrome-Extension/issues) to report a bug or propose an idea, or write to [contact@mccprogrammer.com](mailto:contact@mccprogrammer.com).
 
 ## License
 
