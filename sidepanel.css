@@ -294,3 +294,4 @@ main { flex: 1; padding: 0 16px 16px; }
 .blankslate p { margin: 0; color: var(--muted); font-size: 13px; }
 
 .app-footer { padding: 12px 16px; font-size: 12px; text-align: center; border-top: 1px solid var(--border); }
+.app-contact { margin: 6px 0 0; color: var(--muted); }
